@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulação de Tecido - Massa-Mola</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            color: white;
+            font-family: sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            pointer-events: none;
+            opacity: 0.7;
+            font-size: 14px;
+        }
+        
+        /* Botão de configurações */
+        .config-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+        
+        .config-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: rotate(45deg);
+        }
+        
+        .config-btn img {
+            width: 25px;
+            height: 25px;
+            filter: invert(1);
+        }
+        
+        /* Modal de configurações */
+        .config-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+        
+        .modal-content {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 25px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-btn:hover {
+            color: #ff5555;
+        }
+        
+        /* Controles de configuração */
+        .config-group {
+            margin-bottom: 20px;
+        }
+        
+        .config-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+        
+        .config-name {
+            font-weight: bold;
+        }
+        
+        .config-value {
+            color: #55aaff;
+            font-weight: bold;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+        }
+        
+        .slider {
+            flex-grow: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #55aaff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .slider::-webkit-slider-thumb:hover {
+            background: #77ccff;
+            transform: scale(1.1);
+        }
+        
+        .slider-value {
+            width: 50px;
+            text-align: right;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        
+        .reset-btn {
+            background: rgba(85, 170, 255, 0.2);
+            border: 1px solid rgba(85, 170, 255, 0.5);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .reset-btn:hover {
+            background: rgba(85, 170, 255, 0.4);
+        }
+        
+        .modal-footer {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Barra de ferramentas em leque */
+        .toolbar {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 120px;
+            width: 500px;
+            z-index: 100;
+            pointer-events: auto;
+        }
+        
+        .tool-card {
+            position: absolute;
+            bottom: 0;
+            width: 70px;
+            height: 90px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            transform-origin: bottom center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            user-select: none;
+            pointer-events: auto;
+        }
+        
+        .tool-card:hover:not(.disabled) {
+            background: rgba(0, 0, 0, 0.9);
+            border-color: rgba(85, 170, 255, 0.7);
+            transform: translateY(-10px) scale(1.05);
+        }
+        
+        .tool-card.active:not(.disabled) {
+            background: rgba(85, 170, 255, 0.2);
+            border-color: #55aaff;
+            transform: translateY(-20px) scale(1.1);
+        }
+        
+        .tool-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .tool-card.flame-active {
+            background: rgba(255, 85, 0, 0.3);
+            border-color: #ff5500;
+            animation: pulse 0.5s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { box-shadow: 0 0 10px rgba(255, 85, 0, 0.5); }
+            to { box-shadow: 0 0 20px rgba(255, 85, 0, 0.8); }
+        }
+        
+        .tool-icon {
+            font-size: 25px;
+            margin-bottom: 5px;
+        }
+        
+        .tool-name {
+            font-size: 11px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .tool-hotkey {
+            font-size: 9px;
+            opacity: 0.7;
+            margin-top: 1px;
+        }
+        
+        /* Indicador de ferramenta ativa */
+        .tool-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-size: 14px;
+            border: 1px solid rgba(85, 170, 255, 0.5);
+            z-index: 50;
+        }
+        
+        .tool-indicator.flame-active {
+            border-color: #ff5500;
+            background: rgba(255, 85, 0, 0.2);
+        }
+        
+        /* Contador de dardos fixos */
+        .dart-counter {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 5px;
+            padding: 5px 15px;
+            font-size: 14px;
+            border: 1px solid rgba(255, 85, 85, 0.5);
+            z-index: 50;
+        }
+        
+        /* Botão para remover dardos */
+        .clear-darts-btn {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: rgba(255, 85, 85, 0.2);
+            border: 1px solid rgba(255, 85, 85, 0.5);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+        
+        .clear-darts-btn:hover {
+            background: rgba(255, 85, 85, 0.4);
+        }
+        
+        /* Botão para apagar fogo */
+        .extinguish-btn {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            background: rgba(85, 170, 255, 0.2);
+            border: 1px solid rgba(85, 170, 255, 0.5);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+        
+        .extinguish-btn:hover {
+            background: rgba(85, 170, 255, 0.4);
+        }
+        
+        /* Para telas pequenas */
+        @media (max-width: 768px) {
+            .modal-content {
+                padding: 15px;
+                width: 95%;
+            }
+            
+            .config-btn {
+                top: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+            }
+            
+            .toolbar {
+                width: 450px;
+            }
+            
+            .tool-card {
+                width: 60px;
+                height: 80px;
+            }
+            
+            .clear-darts-btn {
+                top: 60px;
+                right: 10px;
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+            
+            .extinguish-btn {
+                top: 60px;
+                left: 10px;
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .toolbar {
+                width: 400px;
+            }
+            
+            .tool-card {
+                width: 55px;
+                height: 70px;
+            }
+            
+            .tool-icon {
+                font-size: 20px;
+            }
+            
+            .tool-name {
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        Arraste para interagir | Botão direito para rasgar (ou arraste rápido)
+    </div>
+    
+    <!-- Indicador de ferramenta ativa -->
+    <div class="tool-indicator" id="toolIndicator">
+        Ferramenta: Mouse (Arraste)
+    </div>
+    
+    <!-- Contador de dardos fixos -->
+    <div class="dart-counter" id="dartCounter">
+        Dardos Fixos: 0
+    </div>
+    
+    <!-- Botão para apagar fogo -->
+    <button class="extinguish-btn" id="extinguishBtn" title="Apagar todo o fogo">
+        Apagar Fogo (F)
+    </button>
+    
+    <!-- Botão para remover dardos -->
+    <button class="clear-darts-btn" id="clearDartsBtn" title="Remover todos os dardos">
+        Remover Dardos (R)
+    </button>
+    
+    <!-- Botão de configurações -->
+    <button class="config-btn" id="configBtn" title="Configurações">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M24 13.616v-3.232l-2.869-1.454c-.198-.688-.354-1.418-.434-2.187l1.162-3.093-2.285-2.285-3.091 1.162c-.769-.08-1.499-.237-2.188-.435l-1.454-2.869h-3.232l-1.454 2.869c-.688.198-1.418.354-2.187.434l-3.093-1.162-2.285 2.285 1.162 3.091c-.08.769-.237 1.499-.435 2.188l-2.869 1.454v3.232l2.869 1.454c.198.688.354 1.418.434 2.187l-1.162 3.093 2.285 2.285 3.091-1.162c.769.08 1.499.237 2.188.435l1.454 2.869h3.232l1.454-2.869c.688-.198 1.418-.354 2.187-.434l3.093 1.162 2.285-2.285-1.162-3.091c.08-.769.237-1.499.435-2.188l2.869-1.454zm-12 2.384c-2.209 0-4-1.791-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4z"/>
+        </svg>
+    </button>
+    
+    <!-- Modal de configurações -->
+    <div class="config-modal" id="configModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Configurações da Simulação</div>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+            
+            <div id="configControls">
+                <!-- Controles serão gerados dinamicamente pelo JavaScript -->
+            </div>
+            
+            <div class="modal-footer">
+                <button class="reset-btn" id="resetBtn">Redefinir para valores padrão</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Barra de ferramentas em leque -->
+    <div class="toolbar" id="toolbar">
+        <!-- Ferramentas serão adicionadas dinamicamente -->
+    </div>
+    
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Elementos da interface
+        const configBtn = document.getElementById('configBtn');
+        const configModal = document.getElementById('configModal');
+        const closeModal = document.getElementById('closeModal');
+        const configControls = document.getElementById('configControls');
+        const resetBtn = document.getElementById('resetBtn');
+        const toolbar = document.getElementById('toolbar');
+        const toolIndicator = document.getElementById('toolIndicator');
+        const dartCounter = document.getElementById('dartCounter');
+        const clearDartsBtn = document.getElementById('clearDartsBtn');
+        const extinguishBtn = document.getElementById('extinguishBtn');
+
+        // Configurações iniciais
+        let config = {
+            numeroDeLinhas: 30,      // Número de linhas na malha
+            spacing: 12,             // Espaço entre pontos
+            stiffness: 0.9,          // Rigidez da mola
+            gravity: 0.4,            // Força da gravidade
+            friction: 0.99,          // Atrito/Resistência do ar
+            tearDistance: 50,        // Distância para romper a mola
+            lineWidth: 0.5,          // Espessura da linha
+            lineColor: '#55aaff',    // Cor da malha
+            flameIntensity: 1.0,     // Intensidade do fogo
+        };
+
+        // Valores mínimos e máximos para os sliders
+        const configLimits = {
+            numeroDeLinhas: { min: 5, max: 100, step: 1 },
+            spacing: { min: 5, max: 50, step: 1 },
+            stiffness: { min: 0.01, max: 1, step: 0.01 },
+            gravity: { min: 0, max: 2, step: 0.01 },
+            friction: { min: 0.8, max: 0.999, step: 0.001 },
+            tearDistance: { min: 10, max: 200, step: 1 },
+            lineWidth: { min: 0.1, max: 5, step: 0.1 },
+            flameIntensity: { min: 0.1, max: 2.0, step: 0.1 },
+        };
+
+        let width, height, rows, cols;
+        let points = [];
+        let springs = [];
+        let mouse = { x: 0, y: 0, px: 0, py: 0, down: false, button: 0 };
+        
+        // Sistema de ferramentas
+        let activeTool = 'mouse'; // mouse, blower, cannon, dart, flame
+        let tools = {
+            mouse: { name: 'Mouse', icon: '🖱️', hotkey: 'M', desc: 'Arraste para interagir' },
+            blower: { name: 'Soprador', icon: '💨', hotkey: 'B', desc: 'Sopra o tecido' },
+            cannon: { name: 'Canhão', icon: '🎯', hotkey: 'C', desc: 'Atira bolas de canhão' },
+            dart: { name: 'Dardo', icon: '📍', hotkey: 'D', desc: 'Prende o tecido' },
+            flame: { name: 'Lança-Chamas', icon: '🔥', hotkey: 'L', desc: 'Incendia o tecido' }
+        };
+        
+        // Sistema de partículas para efeitos
+        let particles = [];
+        let cannonballs = [];
+        let darts = [];
+        let blowForce = 0;
+        let blowAngle = 0;
+        let flameActive = false;
+        let flameAngle = 0;
+        
+        // Pontos fixados por dardos
+        let pinnedByDarts = new Set();
+        
+        // Sistema de fogo
+        let burningPoints = new Set();
+        let fireParticles = [];
+        
+        // Controle de estado da interface
+        let isConfigModalOpen = false;
+        let isSwitchingTool = false;
+        let toolSwitchInProgress = false;
+        let lastMouseDownTime = 0;
+        const CLICK_THRESHOLD = 150; // ms para distinguir clique de arrasto
+        
+        // Forças aumentadas
+        const CANNON_POWER = 25;
+        const DART_POWER = 22;
+        const BLOWER_POWER = 0.2;
+        const FLAME_POWER = 0.3;
+        
+        // Valores padrão para reset
+        const defaultConfig = {...config};
+
+        // Verifica se o clique foi na barra de ferramentas
+        function isClickOnToolbar(x, y) {
+            const toolbarRect = toolbar.getBoundingClientRect();
+            return (
+                x >= toolbarRect.left &&
+                x <= toolbarRect.right &&
+                y >= toolbarRect.top &&
+                y <= toolbarRect.bottom
+            );
+        }
+
+        // Verifica se pode usar ferramentas
+        function canUseTools() {
+            return !isConfigModalOpen && 
+                   !isSwitchingTool &&
+                   !toolSwitchInProgress &&
+                   document.activeElement === document.body;
+        }
+
+        class Point {
+            constructor(x, y, pinned = false) {
+                this.x = x;
+                this.y = y;
+                this.px = x; // Posição anterior X
+                this.py = y; // Posição anterior Y
+                this.vx = 0;
+                this.vy = 0;
+                this.pinned = pinned;
+                this.originalPinned = pinned;
+                this.dartId = null;
+                this.isBurning = false;
+                this.burnIntensity = 0;
+                this.burnTime = 0;
+                this.maxBurnTime = 200;
+            }
+
+            update() {
+                // Efeito do fogo
+                if (this.isBurning) {
+                    this.burnTime++;
+                    
+                    // Aplica força ascendente do fogo (convecção)
+                    if (!this.pinned) {
+                        this.py -= 0.1 * this.burnIntensity;
+                    }
+                    
+                    // Cria partículas de fogo
+                    if (Math.random() < 0.3 * this.burnIntensity) {
+                        fireParticles.push(new FireParticle(
+                            this.x + (Math.random() - 0.5) * 5,
+                            this.y + (Math.random() - 0.5) * 5,
+                            (Math.random() - 0.5) * 0.5,
+                            -Math.random() * 1.5 - 0.5,
+                            this.burnIntensity
+                        ));
+                    }
+                    
+                    // Propaga fogo para molas conectadas
+                    if (Math.random() < 0.02 * this.burnIntensity) {
+                        springs.forEach(spring => {
+                            if (spring.active && (spring.p1 === this || spring.p2 === this)) {
+                                const otherPoint = spring.p1 === this ? spring.p2 : spring.p1;
+                                if (!otherPoint.pinned && Math.random() < 0.3) {
+                                    otherPoint.ignite(this.burnIntensity * 0.7);
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Queima molas conectadas
+                    springs.forEach(spring => {
+                        if (spring.active && (spring.p1 === this || spring.p2 === this)) {
+                            if (Math.random() < 0.01 * this.burnIntensity) {
+                                spring.active = false;
+                            }
+                        }
+                    });
+                    
+                    // Reduz intensidade com o tempo
+                    if (this.burnTime > this.maxBurnTime * 0.7) {
+                        this.burnIntensity *= 0.99;
+                    }
+                    
+                    // Apaga completamente após tempo máximo
+                    if (this.burnTime > this.maxBurnTime) {
+                        this.isBurning = false;
+                        this.burnIntensity = 0;
+                        burningPoints.delete(this);
+                    }
+                }
+
+                if (this.pinned) return;
+
+                // Força do mouse (Vento/Interação)
+                let dx = this.x - mouse.x;
+                let dy = this.y - mouse.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                
+                // Interação com ferramentas (só se pode usar ferramentas e mouse está pressionado)
+                if (canUseTools() && mouse.down) {
+                    if (activeTool === 'mouse') {
+                        if (dist < 80) {
+                            this.px -= (mouse.x - mouse.px) * 0.5;
+                            this.py -= (mouse.y - mouse.py) * 0.5;
+                        }
+                    } else if (activeTool === 'blower' && blowForce > 0) {
+                        let blowX = Math.cos(blowAngle);
+                        let blowY = Math.sin(blowAngle);
+                        let pointToBlowX = this.x - mouse.x;
+                        let pointToBlowY = this.y - mouse.y;
+                        
+                        let projection = pointToBlowX * blowX + pointToBlowY * blowY;
+                        let blowDist = Math.sqrt(pointToBlowX * pointToBlowX + pointToBlowY * pointToBlowY);
+                        
+                        if (projection > 0 && blowDist < 150) {
+                            let force = blowForce * (1 - blowDist / 150) * BLOWER_POWER;
+                            this.px -= blowX * force;
+                            this.py -= blowY * force;
+                        }
+                    } else if (activeTool === 'flame' && flameActive) {
+                        // Efeito do lança-chamas
+                        let flameX = Math.cos(flameAngle);
+                        let flameY = Math.sin(flameAngle);
+                        let pointToFlameX = this.x - mouse.x;
+                        let pointToFlameY = this.y - mouse.y;
+                        
+                        let projection = pointToFlameX * flameX + pointToFlameY * flameY;
+                        let flameDist = Math.sqrt(pointToFlameX * pointToFlameX + pointToFlameY * pointToFlameY);
+                        
+                        if (projection > 0 && flameDist < 120) {
+                            // Força do jato de fogo
+                            let force = (1 - flameDist / 120) * FLAME_POWER * config.flameIntensity;
+                            this.px -= flameX * force * 0.5;
+                            this.py -= flameY * force * 0.5;
+                            
+                            // Chance de incendiar
+                            if (Math.random() < 0.05 * config.flameIntensity && !this.isBurning) {
+                                this.ignite(config.flameIntensity);
+                            }
+                        }
+                    }
+                }
+
+                // Integração de Verlet
+                let vx = (this.x - this.px) * config.friction;
+                let vy = (this.y - this.py) * config.friction;
+
+                this.px = this.x;
+                this.py = this.y;
+                this.x += vx;
+                this.y += vy + config.gravity;
+            }
+            
+            // Inicia fogo neste ponto
+            ignite(intensity = 1.0) {
+                this.isBurning = true;
+                this.burnIntensity = Math.min(intensity, 1.5);
+                this.burnTime = 0;
+                burningPoints.add(this);
+            }
+            
+            // Apaga o fogo neste ponto
+            extinguish() {
+                this.isBurning = false;
+                this.burnIntensity = 0;
+                burningPoints.delete(this);
+            }
+
+            draw() {
+                // Desenha ponto queimando
+                if (this.isBurning) {
+                    ctx.save();
+                    
+                    // Brilho do ponto em chamas
+                    let gradient = ctx.createRadialGradient(
+                        this.x, this.y, 0,
+                        this.x, this.y, 8 * this.burnIntensity
+                    );
+                    gradient.addColorStop(0, `rgba(255, ${100 + 155 * this.burnIntensity}, 0, ${0.8 * this.burnIntensity})`);
+                    gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 8 * this.burnIntensity, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.restore();
+                    
+                    // Centro do ponto em chamas
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgb(255, ${100 + 155 * this.burnIntensity}, 0)`;
+                    ctx.fill();
+                }
+                // Desenha ponto fixo por dardo
+                else if (this.dartId) {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffff55';
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#ffaa00';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 1, 0, Math.PI * 2);
+                    ctx.fillStyle = this.pinned ? '#ff5555' : '#ffffff';
+                    ctx.fill();
+                }
+            }
+            
+            pinByDart(dartId) {
+                this.pinned = true;
+                this.originalPinned = false;
+                this.dartId = dartId;
+                pinnedByDarts.add(this);
+                updateDartCounter();
+            }
+            
+            unpinByDart() {
+                if (this.dartId) {
+                    this.pinned = false;
+                    this.dartId = null;
+                    pinnedByDarts.delete(this);
+                    updateDartCounter();
+                }
+            }
+        }
+
+        class Spring {
+            constructor(p1, p2) {
+                this.p1 = p1;
+                this.p2 = p2;
+                this.length = config.spacing;
+                this.active = true;
+                this.isBurning = false;
+                this.burnIntensity = 0;
+            }
+
+            update() {
+                if (!this.active) return;
+
+                // Efeito do fogo na mola
+                if (this.isBurning) {
+                    this.burnIntensity *= 0.98;
+                    
+                    // Cria partículas de fogo ao longo da mola
+                    if (Math.random() < 0.1 * this.burnIntensity) {
+                        const t = Math.random();
+                        const x = this.p1.x + (this.p2.x - this.p1.x) * t;
+                        const y = this.p1.y + (this.p2.y - this.p1.y) * t;
+                        
+                        fireParticles.push(new FireParticle(
+                            x + (Math.random() - 0.5) * 3,
+                            y + (Math.random() - 0.5) * 3,
+                            (Math.random() - 0.5) * 0.3,
+                            -Math.random() * 0.8 - 0.2,
+                            this.burnIntensity * 0.7
+                        ));
+                    }
+                    
+                    // Desativa mola se queimada por tempo suficiente
+                    if (Math.random() < 0.02 * this.burnIntensity) {
+                        this.active = false;
+                    }
+                    
+                    // Propaga fogo para pontos
+                    if (Math.random() < 0.01 * this.burnIntensity) {
+                        if (!this.p1.isBurning) this.p1.ignite(this.burnIntensity * 0.5);
+                        if (!this.p2.isBurning) this.p2.ignite(this.burnIntensity * 0.5);
+                    }
+                }
+
+                let dx = this.p2.x - this.p1.x;
+                let dy = this.p2.y - this.p1.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+
+                // Rasgar se a distância for muito grande
+                if (dist > config.tearDistance || (dist > config.tearDistance * 0.6 && mouse.down && this.mouseNearby())) {
+                    this.active = false;
+                    return;
+                }
+
+                let diff = (this.length - dist) / dist;
+                let offsetX = dx * diff * 0.5 * config.stiffness;
+                let offsetY = dy * diff * 0.5 * config.stiffness;
+
+                if (!this.p1.pinned) {
+                    this.p1.x -= offsetX;
+                    this.p1.y -= offsetY;
+                }
+                if (!this.p2.pinned) {
+                    this.p2.x += offsetX;
+                    this.p2.y += offsetY;
+                }
+            }
+            
+            // Inicia fogo nesta mola
+            ignite(intensity = 1.0) {
+                this.isBurning = true;
+                this.burnIntensity = intensity;
+            }
+            
+            // Apaga fogo nesta mola
+            extinguish() {
+                this.isBurning = false;
+                this.burnIntensity = 0;
+            }
+
+            mouseNearby() {
+                let midX = (this.p1.x + this.p2.x) / 2;
+                let midY = (this.p1.y + this.p2.y) / 2;
+                return Math.hypot(midX - mouse.x, midY - mouse.y) < 20;
+            }
+
+            draw() {
+                if (!this.active) return;
+                
+                if (this.isBurning) {
+                    // Desenha mola em chamas
+                    const gradient = ctx.createLinearGradient(
+                        this.p1.x, this.p1.y,
+                        this.p2.x, this.p2.y
+                    );
+                    
+                    const intensity = this.burnIntensity;
+                    gradient.addColorStop(0, `rgba(255, ${100 + 155 * intensity}, 0, ${0.8 * intensity})`);
+                    gradient.addColorStop(0.5, `rgba(255, ${50 + 205 * intensity}, 0, ${0.9 * intensity})`);
+                    gradient.addColorStop(1, `rgba(255, ${100 + 155 * intensity}, 0, ${0.8 * intensity})`);
+                    
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = config.lineWidth + 2 * intensity;
+                } else {
+                    ctx.strokeStyle = config.lineColor;
+                    ctx.lineWidth = config.lineWidth;
+                }
+                
+                ctx.beginPath();
+                ctx.moveTo(this.p1.x, this.p1.y);
+                ctx.lineTo(this.p2.x, this.p2.y);
+                ctx.stroke();
+            }
+        }
+        
+        // Classe para partículas de fogo
+        class FireParticle {
+            constructor(x, y, vx, vy, intensity) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.intensity = intensity || Math.random() * 0.5 + 0.5;
+                this.life = 50 + Math.random() * 100;
+                this.maxLife = this.life;
+                this.size = 3 + Math.random() * 5;
+                this.colorPhase = Math.random() * Math.PI * 2;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+                this.life--;
+                this.size *= 0.98;
+                
+                // Movimento turbulento
+                this.vx += (Math.random() - 0.5) * 0.1;
+                this.vy += (Math.random() - 0.5) * 0.05;
+                
+                // Flutuação para cima (convecção)
+                this.vy -= 0.02;
+            }
+            
+            draw() {
+                const lifeRatio = this.life / this.maxLife;
+                const alpha = lifeRatio * this.intensity;
+                
+                // Cor dinâmica (de amarelo para vermelho)
+                const colorPhase = this.colorPhase + (1 - lifeRatio) * Math.PI * 2;
+                const r = 255;
+                const g = 100 + Math.sin(colorPhase) * 100;
+                const b = 0;
+                
+                ctx.save();
+                ctx.globalAlpha = alpha * 0.7;
+                
+                // Brilho exterior
+                const gradient = ctx.createRadialGradient(
+                    this.x, this.y, 0,
+                    this.x, this.y, this.size * 2
+                );
+                gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
+                gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Centro da partícula
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+        
+        // Classe para bolas de canhão
+        class Cannonball {
+            constructor(x, y, vx, vy) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.radius = 10;
+                this.active = true;
+                this.age = 0;
+                this.id = Math.random().toString(36).substr(2, 9);
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += config.gravity * 0.1;
+                this.vx *= 0.99;
+                this.vy *= 0.99;
+                this.age++;
+                
+                // Remove se sair da tela ou ficar muito velho
+                if (this.x < -100 || this.x > width + 100 || 
+                    this.y > height + 100 || this.age > 600) {
+                    this.active = false;
+                }
+                
+                // Colisão com pontos do tecido
+                if (this.active) {
+                    points.forEach(p => {
+                        if (!p.pinned) {
+                            let dx = p.x - this.x;
+                            let dy = p.y - this.y;
+                            let dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < this.radius + 2) {
+                                // Aplica força no ponto
+                                p.px -= this.vx * 0.8;
+                                p.py -= this.vy * 0.8;
+                                
+                                // Rebate a bola de canhão
+                                if (dist > 0) {
+                                    let nx = dx / dist;
+                                    let ny = dy / dist;
+                                    let dot = this.vx * nx + this.vy * ny;
+                                    this.vx = this.vx - 2 * dot * nx * 0.7;
+                                    this.vy = this.vy - 2 * dot * ny * 0.7;
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff5555';
+                ctx.fill();
+                ctx.strokeStyle = '#ff0000';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Efeito de brilho
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * 0.7, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff8888';
+                ctx.fill();
+            }
+        }
+        
+        // Classe para dardos
+        class Dart {
+            constructor(x, y, vx, vy, targetX, targetY) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.active = true;
+                this.stuck = false;
+                this.age = 0;
+                this.id = Math.random().toString(36).substr(2, 9);
+                this.stuckPoint = null;
+                this.rotation = Math.atan2(vy, vx);
+                
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.collisionEnabled = false;
+                this.distanceTraveled = 0;
+                
+                this.initialDistanceToTarget = Math.sqrt(
+                    Math.pow(this.targetX - this.x, 2) + 
+                    Math.pow(this.targetY - this.y, 2)
+                );
+                
+                this.minTravelDistance = this.initialDistanceToTarget * 0.9;
+            }
+            
+            update() {
+                if (this.stuck) {
+                    if (this.stuckPoint) {
+                        this.x = this.stuckPoint.x;
+                        this.y = this.stuckPoint.y;
+                    }
+                    return;
+                }
+                
+                let prevX = this.x;
+                let prevY = this.y;
+                
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += config.gravity * 0.05;
+                this.rotation = Math.atan2(this.vy, this.vx);
+                this.age++;
+                
+                this.distanceTraveled += Math.sqrt(
+                    Math.pow(this.x - prevX, 2) + 
+                    Math.pow(this.y - prevY, 2)
+                );
+                
+                const currentDistanceToTarget = Math.sqrt(
+                    Math.pow(this.targetX - this.x, 2) + 
+                    Math.pow(this.targetY - this.y, 2)
+                );
+                
+                if (!this.collisionEnabled) {
+                    const dotProduct = (this.targetX - prevX) * this.vx + (this.targetY - prevY) * this.vy;
+                    
+                    if (this.distanceTraveled >= this.minTravelDistance || dotProduct < 0) {
+                        this.collisionEnabled = true;
+                    }
+                }
+                
+                if (this.x < -100 || this.x > width + 100 || this.y > height + 100 || this.age > 400) {
+                    this.active = false;
+                }
+                
+                if (this.active && !this.stuck && this.collisionEnabled) {
+                    let closestPoint = null;
+                    let closestDist = Infinity;
+                    
+                    points.forEach(p => {
+                        if (!p.pinned) {
+                            let dx = p.x - this.x;
+                            let dy = p.y - this.y;
+                            let dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < 10 && dist < closestDist) {
+                                closestDist = dist;
+                                closestPoint = p;
+                            }
+                        }
+                    });
+                    
+                    if (closestPoint) {
+                        this.stuck = true;
+                        this.stuckPoint = closestPoint;
+                        this.vx = 0;
+                        this.vy = 0;
+                        
+                        closestPoint.pinByDart(this.id);
+                        
+                        for (let i = 0; i < 15; i++) {
+                            particles.push(new Particle(
+                                this.x, this.y,
+                                (Math.random() - 0.5) * 4,
+                                (Math.random() - 0.5) * 4,
+                                '#ffff55',
+                                2 + Math.random() * 3,
+                                25 + Math.random() * 25
+                            ));
+                        }
+                    }
+                }
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                if (this.stuck) {
+                    ctx.rotate(this.rotation);
+                    
+                    ctx.strokeStyle = '#ffff55';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(-8, 0);
+                    ctx.lineTo(12, 0);
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = '#ffaa00';
+                    ctx.beginPath();
+                    ctx.moveTo(12, 0);
+                    ctx.lineTo(7, -3);
+                    ctx.lineTo(7, 3);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#ff5555';
+                    ctx.beginPath();
+                    ctx.moveTo(-8, 0);
+                    ctx.lineTo(-3, -5);
+                    ctx.lineTo(2, 0);
+                    ctx.lineTo(-3, 5);
+                    ctx.closePath();
+                    ctx.fill();
+                } else {
+                    ctx.rotate(this.rotation);
+                    
+                    ctx.strokeStyle = '#ffff55';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(-10, 0);
+                    ctx.lineTo(15, 0);
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = '#ffaa00';
+                    ctx.beginPath();
+                    ctx.moveTo(15, 0);
+                    ctx.lineTo(10, -3);
+                    ctx.lineTo(10, 3);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#ff5555';
+                    ctx.beginPath();
+                    ctx.moveTo(-10, 0);
+                    ctx.lineTo(-5, -5);
+                    ctx.lineTo(0, 0);
+                    ctx.lineTo(-5, 5);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.globalAlpha = this.collisionEnabled ? 0.5 : 0.2;
+                    ctx.strokeStyle = this.collisionEnabled ? '#ffaa00' : '#888888';
+                    ctx.lineWidth = this.collisionEnabled ? 1 : 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(-20, 0);
+                    ctx.lineTo(-10, 0);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                    
+                    if (!this.collisionEnabled) {
+                        ctx.restore();
+                        
+                        ctx.save();
+                        ctx.globalAlpha = 0.3;
+                        ctx.strokeStyle = '#ffff00';
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([5, 5]);
+                        ctx.beginPath();
+                        ctx.moveTo(this.x, this.y);
+                        ctx.lineTo(this.targetX, this.targetY);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        
+                        ctx.beginPath();
+                        ctx.arc(this.targetX, this.targetY, 5, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ffff00';
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                        ctx.restore();
+                        
+                        ctx.save();
+                        ctx.translate(this.x, this.y);
+                        ctx.rotate(this.rotation);
+                    }
+                }
+                
+                ctx.restore();
+            }
+        }
+        
+        // Sistema de partículas para efeitos
+        class Particle {
+            constructor(x, y, vx, vy, color, size, life) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color;
+                this.size = size;
+                this.life = life;
+                this.maxLife = life;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= 0.95;
+                this.vy *= 0.95;
+                this.life--;
+                this.size *= 0.97;
+            }
+            
+            draw() {
+                ctx.globalAlpha = this.life / this.maxLife;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+        
+        function updateDartCounter() {
+            dartCounter.textContent = `Dardos Fixos: ${pinnedByDarts.size}`;
+        }
+        
+        function extinguishAllFire() {
+            // Apaga todos os pontos em chamas
+            points.forEach(p => p.extinguish());
+            
+            // Apaga todas as molas em chamas
+            springs.forEach(s => s.extinguish());
+            
+            // Limpa partículas de fogo
+            fireParticles = [];
+            
+            // Limpa conjunto de pontos queimando
+            burningPoints.clear();
+        }
+
+        function init() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            
+            cols = Math.floor(width / config.spacing / 2.5);
+            rows = config.numeroDeLinhas;
+            const startX = (width - cols * config.spacing) / 2;
+
+            points = [];
+            springs = [];
+            cannonballs = [];
+            darts = [];
+            particles = [];
+            fireParticles = [];
+            pinnedByDarts.clear();
+            burningPoints.clear();
+            updateDartCounter();
+
+            for (let y = 0; y <= rows; y++) {
+                for (let x = 0; x <= cols; x++) {
+                    let p = new Point(startX + x * config.spacing, 50 + y * config.spacing, y === 0);
+                    points.push(p);
+
+                    if (x > 0) springs.push(new Spring(points[points.length - 2], p));
+                    if (y > 0) springs.push(new Spring(points[points.length - (cols + 2)], p));
+                }
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Atualiza física (múltiplos passos para estabilidade)
+            for(let i = 0; i < 5; i++) {
+                springs.forEach(s => s.update());
+            }
+            points.forEach(p => p.update());
+            
+            // Atualiza bolas de canhão
+            cannonballs = cannonballs.filter(b => b.active);
+            cannonballs.forEach(b => b.update());
+            
+            // Atualiza dardos
+            darts = darts.filter(d => d.active);
+            darts.forEach(d => d.update());
+            
+            // Atualiza partículas
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            
+            // Atualiza partículas de fogo
+            fireParticles = fireParticles.filter(p => p.life > 0);
+            fireParticles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            // Desenha malha
+            ctx.beginPath();
+            ctx.strokeStyle = config.lineColor;
+            ctx.lineWidth = config.lineWidth;
+            springs.forEach(s => s.draw());
+            ctx.stroke();
+            
+            // Desenha pontos
+            points.forEach(p => p.draw());
+            
+            // Desenha bolas de canhão
+            cannonballs.forEach(b => b.draw());
+            
+            // Desenha dardos
+            darts.forEach(d => d.draw());
+            
+            // Desenha efeito de sopro (só se pode usar ferramentas)
+            if (canUseTools() && activeTool === 'blower' && blowForce > 0) {
+                drawBlowerEffect();
+            }
+            
+            // Desenha efeito de lança-chamas (só se pode usar ferramentas)
+            if (canUseTools() && activeTool === 'flame' && flameActive) {
+                drawFlameEffect();
+            }
+
+            mouse.px = mouse.x;
+            mouse.py = mouse.y;
+
+            requestAnimationFrame(animate);
+        }
+        
+        function drawBlowerEffect() {
+            let centerX = mouse.x;
+            let centerY = mouse.y;
+            let angle = blowAngle;
+            let force = blowForce;
+            let radius = 40 + force * 30;
+            
+            ctx.save();
+            ctx.globalAlpha = 0.4;
+            ctx.fillStyle = '#55aaff';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.globalAlpha = 0.9;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            let arrowX = centerX + Math.cos(angle) * (radius + 30);
+            let arrowY = centerY + Math.sin(angle) * (radius + 30);
+            ctx.lineTo(arrowX, arrowY);
+            
+            ctx.lineTo(arrowX - Math.cos(angle - 0.3) * 15, arrowY - Math.sin(angle - 0.3) * 15);
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX - Math.cos(angle + 0.3) * 15, arrowY - Math.sin(angle + 0.3) * 15);
+            ctx.stroke();
+            
+            ctx.restore();
+            
+            if (Math.random() < 0.5) {
+                let pAngle = angle + (Math.random() - 0.5) * 0.7;
+                let pDist = Math.random() * radius;
+                let px = centerX + Math.cos(pAngle) * pDist;
+                let py = centerY + Math.sin(pAngle) * pDist;
+                
+                particles.push(new Particle(
+                    px, py,
+                    Math.cos(pAngle) * force * 5 + (Math.random() - 0.5) * 2,
+                    Math.sin(pAngle) * force * 5 + (Math.random() - 0.5) * 2,
+                    '#ffffff',
+                    3 + Math.random() * 4,
+                    40 + Math.random() * 40
+                ));
+            }
+        }
+        
+        function drawFlameEffect() {
+            const centerX = mouse.x;
+            const centerY = mouse.y;
+            const angle = flameAngle;
+            const length = 120;
+            const baseWidth = 30;
+            const tipWidth = 5;
+            
+            // Calcula pontos do triângulo da chama
+            const tipX = centerX + Math.cos(angle) * length;
+            const tipY = centerY + Math.sin(angle) * length;
+            
+            const leftX = centerX + Math.cos(angle - Math.PI/2) * baseWidth/2;
+            const leftY = centerY + Math.sin(angle - Math.PI/2) * baseWidth/2;
+            
+            const rightX = centerX + Math.cos(angle + Math.PI/2) * baseWidth/2;
+            const rightY = centerY + Math.sin(angle + Math.PI/2) * baseWidth/2;
+            
+            // Desenha a área da chama com gradiente
+            ctx.save();
+            
+            // Cria gradiente radial para a base
+            const gradient = ctx.createRadialGradient(
+                centerX, centerY, 0,
+                centerX, centerY, baseWidth * 1.5
+            );
+            gradient.addColorStop(0, `rgba(255, 200, 0, ${0.6 * config.flameIntensity})`);
+            gradient.addColorStop(0.5, `rgba(255, 100, 0, ${0.4 * config.flameIntensity})`);
+            gradient.addColorStop(1, 'rgba(255, 50, 0, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, baseWidth * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Desenha triângulo da chama
+            const flameGradient = ctx.createLinearGradient(
+                centerX, centerY,
+                tipX, tipY
+            );
+            flameGradient.addColorStop(0, `rgba(255, 255, 200, ${0.7 * config.flameIntensity})`);
+            flameGradient.addColorStop(0.3, `rgba(255, 200, 0, ${0.6 * config.flameIntensity})`);
+            flameGradient.addColorStop(0.7, `rgba(255, 100, 0, ${0.5 * config.flameIntensity})`);
+            flameGradient.addColorStop(1, `rgba(255, 50, 0, ${0.3 * config.flameIntensity})`);
+            
+            ctx.fillStyle = flameGradient;
+            ctx.beginPath();
+            ctx.moveTo(leftX, leftY);
+            ctx.lineTo(tipX, tipY);
+            ctx.lineTo(rightX, rightY);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.restore();
+            
+            // Cria partículas de fogo aleatórias
+            if (Math.random() < 0.8 * config.flameIntensity) {
+                const dist = Math.random() * length * 0.8;
+                const offset = (Math.random() - 0.5) * baseWidth * 0.7;
+                
+                const pX = centerX + Math.cos(angle) * dist + Math.cos(angle - Math.PI/2) * offset;
+                const pY = centerY + Math.sin(angle) * dist + Math.sin(angle - Math.PI/2) * offset;
+                
+                fireParticles.push(new FireParticle(
+                    pX, pY,
+                    Math.cos(angle) * 2 + (Math.random() - 0.5) * 1.5,
+                    Math.sin(angle) * 2 + (Math.random() - 0.5) * 1.5 - 0.5,
+                    config.flameIntensity * (0.7 + Math.random() * 0.3)
+                ));
+            }
+            
+            // Cria fumaça
+            if (Math.random() < 0.3 * config.flameIntensity) {
+                const smokeX = centerX + Math.cos(angle) * length * 0.9;
+                const smokeY = centerY + Math.sin(angle) * length * 0.9;
+                
+                particles.push(new Particle(
+                    smokeX, smokeY,
+                    Math.cos(angle) * 0.5 + (Math.random() - 0.5) * 0.8,
+                    Math.sin(angle) * 0.5 + (Math.random() - 0.5) * 0.8 - 0.3,
+                    `rgba(100, 100, 100, ${0.5 * config.flameIntensity})`,
+                    5 + Math.random() * 8,
+                    80 + Math.random() * 80
+                ));
+            }
+        }
+        
+        function createToolbar() {
+            toolbar.innerHTML = '';
+            const toolKeys = Object.keys(tools);
+            
+            const totalTools = toolKeys.length;
+            const fanAngle = Math.PI * 0.8;
+            const startAngle = -fanAngle / 2;
+            const angleStep = fanAngle / (totalTools - 1);
+            const radius = 160;
+            
+            toolKeys.forEach((toolId, index) => {
+                const tool = tools[toolId];
+                const angle = startAngle + angleStep * index;
+                const x = Math.sin(angle) * radius;
+                const y = -Math.cos(angle) * radius * 0.7;
+                
+                const card = document.createElement('div');
+                card.className = `tool-card ${activeTool === toolId ? 'active' : ''} ${toolId === 'flame' && flameActive ? 'flame-active' : ''}`;
+                card.style.transform = `translateX(${x}px) translateY(${y}px) rotate(${angle * 0.3}rad)`;
+                card.style.zIndex = activeTool === toolId ? 100 : (totalTools - index);
+                
+                card.innerHTML = `
+                    <div class="tool-icon">${tool.icon}</div>
+                    <div class="tool-name">${tool.name}</div>
+                    <div class="tool-hotkey">(${tool.hotkey})</div>
+                `;
+                
+                card.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    isSwitchingTool = true;
+                });
+                
+                card.addEventListener('mouseup', (e) => {
+                    e.stopPropagation();
+                    isSwitchingTool = false;
+                    toolSwitchInProgress = true;
+                    
+                    // Troca de ferramenta
+                    setActiveTool(toolId);
+                    
+                    // Pequeno delay para evitar que o clique ative a ferramenta
+                    setTimeout(() => {
+                        toolSwitchInProgress = false;
+                    }, 50);
+                });
+                
+                toolbar.appendChild(card);
+            });
+        }
+        
+        function setActiveTool(toolId) {
+            // Desativa ferramentas ativas antes de trocar
+            if (activeTool === 'blower' && blowForce > 0) {
+                blowForce = 0;
+            }
+            if (activeTool === 'flame' && flameActive) {
+                flameActive = false;
+                toolIndicator.className = 'tool-indicator';
+            }
+            
+            // Troca a ferramenta
+            activeTool = toolId;
+            toolIndicator.textContent = `Ferramenta: ${tools[toolId].name}`;
+            
+            // Atualiza a barra de ferramentas
+            createToolbar();
+        }
+        
+        function clearAllDarts() {
+            darts = [];
+            points.forEach(p => p.unpinByDart());
+            updateDartCounter();
+        }
+        
+        // Cria os controles de configuração
+        function createConfigControls() {
+            configControls.innerHTML = '';
+            
+            const configLabels = {
+                numeroDeLinhas: 'Número de Linhas',
+                spacing: 'Espaçamento',
+                stiffness: 'Rigidez da Mola',
+                gravity: 'Gravidade',
+                friction: 'Atrito/Resistência',
+                tearDistance: 'Distância para Rasgar',
+                lineWidth: 'Espessura da Linha',
+                flameIntensity: 'Intensidade do Fogo'
+            };
+            
+            Object.keys(config).forEach(key => {
+                if (key === 'lineColor') return;
+                
+                const limits = configLimits[key] || { min: 0, max: 100, step: 1 };
+                const div = document.createElement('div');
+                div.className = 'config-group';
+                
+                div.innerHTML = `
+                    <div class="config-label">
+                        <span class="config-name">${configLabels[key] || key}</span>
+                        <span class="config-value" id="value-${key}">${config[key]}</span>
+                    </div>
+                    <div class="slider-container">
+                        <input 
+                            type="range" 
+                            min="${limits.min}" 
+                            max="${limits.max}" 
+                            step="${limits.step}" 
+                            value="${config[key]}" 
+                            class="slider" 
+                            id="slider-${key}"
+                        />
+                        <span class="slider-value" id="display-${key}">${config[key]}</span>
+                    </div>
+                `;
+                
+                configControls.appendChild(div);
+                
+                const slider = document.getElementById(`slider-${key}`);
+                const display = document.getElementById(`display-${key}`);
+                const valueSpan = document.getElementById(`value-${key}`);
+                
+                slider.addEventListener('input', function() {
+                    config[key] = this.valueAsNumber || parseFloat(this.value);
+                    display.textContent = config[key].toFixed(key === 'friction' ? 3 : 2);
+                    valueSpan.textContent = config[key].toFixed(key === 'friction' ? 3 : 2);
+                    
+                    if (['numeroDeLinhas', 'spacing'].includes(key)) {
+                        init();
+                    }
+                });
+            });
+            
+            const colorDiv = document.createElement('div');
+            colorDiv.className = 'config-group';
+            colorDiv.innerHTML = `
+                <div class="config-label">
+                    <span class="config-name">Cor da Malha</span>
+                    <span class="config-value" id="value-lineColor">${config.lineColor}</span>
+                </div>
+                <div class="slider-container">
+                    <input type="color" value="${config.lineColor}" id="color-lineColor" style="flex-grow: 1; height: 30px; cursor: pointer;">
+                </div>
+            `;
+            configControls.appendChild(colorDiv);
+            
+            const colorPicker = document.getElementById('color-lineColor');
+            const colorValueSpan = document.getElementById('value-lineColor');
+            
+            colorPicker.addEventListener('input', function() {
+                config.lineColor = this.value;
+                colorValueSpan.textContent = config.lineColor;
+            });
+        }
+        
+        // Inicializa a interface de configurações
+        createConfigControls();
+        createToolbar();
+        
+        // Abre o modal de configurações
+        configBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            isConfigModalOpen = true;
+            configModal.style.display = 'flex';
+            
+            // Desativa ferramentas ativas
+            if (activeTool === 'blower' && blowForce > 0) {
+                blowForce = 0;
+            }
+            if (activeTool === 'flame' && flameActive) {
+                flameActive = false;
+                toolIndicator.className = 'tool-indicator';
+                createToolbar();
+            }
+        });
+        
+        // Fecha o modal de configurações
+        closeModal.addEventListener('click', function(e) {
+            e.stopPropagation();
+            isConfigModalOpen = false;
+            configModal.style.display = 'none';
+        });
+        
+        // Fecha o modal ao clicar fora do conteúdo
+        configModal.addEventListener('click', function(e) {
+            if (e.target === configModal) {
+                e.stopPropagation();
+                isConfigModalOpen = false;
+                configModal.style.display = 'none';
+            }
+        });
+        
+        // Redefine as configurações para os valores padrão
+        resetBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            config = {...defaultConfig};
+            createConfigControls();
+            init();
+        });
+        
+        // Remove todos os dardos (com prevenção de ativação)
+        clearDartsBtn.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+        });
+        
+        clearDartsBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            clearAllDarts();
+        });
+        
+        // Apaga todo o fogo (com prevenção de ativação)
+        extinguishBtn.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+        });
+        
+        extinguishBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            extinguishAllFire();
+        });
+
+        // Listeners de mouse com verificação de estado
+        window.addEventListener('mousedown', e => { 
+            lastMouseDownTime = Date.now();
+            
+            // Verifica se está clicando na barra de ferramentas
+            if (isClickOnToolbar(e.clientX, e.clientY)) {
+                // Deixa a barra de ferramentas lidar com isso
+                return;
+            }
+            
+            // Verifica se está clicando em botões da UI
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('.modal-content')) {
+                return;
+            }
+            
+            // Só processa se pode usar ferramentas
+            if (!canUseTools()) {
+                return;
+            }
+            
+            mouse.down = true; 
+            mouse.button = e.button;
+            
+            // Ações específicas por ferramenta (só se pode usar ferramentas)
+            if (activeTool === 'cannon' && e.button === 0) {
+                let angle = Math.atan2(e.clientY - height + 100, e.clientX - width / 2);
+                let speed = CANNON_POWER;
+                let vx = Math.cos(angle) * speed;
+                let vy = Math.sin(angle) * speed;
+                
+                cannonballs.push(new Cannonball(width / 2, height - 50, vx, vy));
+                
+                for (let i = 0; i < 30; i++) {
+                    particles.push(new Particle(
+                        width / 2, height - 50,
+                        vx * 0.1 + (Math.random() - 0.5) * 3,
+                        vy * 0.1 + (Math.random() - 0.5) * 3,
+                        '#888888',
+                        4 + Math.random() * 5,
+                        50 + Math.random() * 50
+                    ));
+                }
+                
+                for (let i = 0; i < 10; i++) {
+                    particles.push(new Particle(
+                        width / 2, height - 50,
+                        (Math.random() - 0.5) * 8,
+                        (Math.random() - 0.5) * 8,
+                        '#ff5555',
+                        6 + Math.random() * 6,
+                        10 + Math.random() * 10
+                    ));
+                }
+            } else if (activeTool === 'dart' && e.button === 0) {
+                let angle = Math.atan2(e.clientY - height + 100, e.clientX - width / 2);
+                let speed = DART_POWER;
+                let vx = Math.cos(angle) * speed;
+                let vy = Math.sin(angle) * speed;
+                
+                darts.push(new Dart(
+                    width / 2,
+                    height - 50,
+                    vx,
+                    vy,
+                    e.clientX,
+                    e.clientY
+                ));
+                
+                for (let i = 0; i < 10; i++) {
+                    particles.push(new Particle(
+                        width / 2, height - 50,
+                        vx * 0.05 + (Math.random() - 0.5) * 1.5,
+                        vy * 0.05 + (Math.random() - 0.5) * 1.5,
+                        '#ffff55',
+                        2 + Math.random() * 2,
+                        15 + Math.random() * 15
+                    ));
+                }
+            } else if (activeTool === 'blower' && e.button === 0) {
+                blowForce = 1.5;
+                blowAngle = Math.atan2(e.clientY - mouse.y, e.clientX - mouse.x);
+            } else if (activeTool === 'flame' && e.button === 0) {
+                flameActive = true;
+                flameAngle = Math.atan2(e.clientY - mouse.y, e.clientX - mouse.x);
+                toolIndicator.className = 'tool-indicator flame-active';
+                createToolbar();
+            }
+        });
+        
+        window.addEventListener('mouseup', e => { 
+            mouse.down = false;
+            
+            // Só processa se pode usar ferramentas e não está trocando de ferramenta
+            if (!canUseTools() || isSwitchingTool) {
+                return;
+            }
+            
+            if (activeTool === 'blower') {
+                blowForce = 0;
+            } else if (activeTool === 'flame') {
+                flameActive = false;
+                toolIndicator.className = 'tool-indicator';
+                createToolbar();
+            }
+        });
+        
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            
+            // Só atualiza ângulos se pode usar ferramentas e mouse está pressionado
+            if (!canUseTools() || !mouse.down) {
+                return;
+            }
+            
+            if (activeTool === 'blower' && blowForce > 0) {
+                blowAngle = Math.atan2(e.clientY - mouse.y, e.clientX - mouse.x);
+            } else if (activeTool === 'flame' && flameActive) {
+                flameAngle = Math.atan2(e.clientY - mouse.y, e.clientX - mouse.x);
+            }
+        });
+        
+        window.addEventListener('contextmenu', e => {
+            if (canUseTools()) {
+                e.preventDefault();
+            }
+        });
+        
+        window.addEventListener('resize', init);
+
+        // Atalhos de teclado para ferramentas
+        window.addEventListener('keydown', function(e) {
+            // Se o modal está aberto, ignora atalhos
+            if (isConfigModalOpen) {
+                return;
+            }
+            
+            const key = e.key.toUpperCase();
+            
+            // Ferramentas
+            if (key === 'M') setActiveTool('mouse');
+            if (key === 'B') setActiveTool('blower');
+            if (key === 'C') setActiveTool('cannon');
+            if (key === 'D') setActiveTool('dart');
+            if (key === 'L') setActiveTool('flame');
+            
+            // Remove dardos com R
+            if (key === 'R') {
+                clearAllDarts();
+            }
+            
+            // Apaga fogo com F
+            if (key === 'F') {
+                extinguishAllFire();
+            }
+            
+            // Fecha modal com ESC
+            if (e.key === 'Escape' && configModal.style.display === 'flex') {
+                isConfigModalOpen = false;
+                configModal.style.display = 'none';
+            }
+            
+            // Dispara dardos com BARRA DE ESPAÇO
+            if (e.key === ' ' && activeTool === 'dart') {
+                e.preventDefault();
+                darts.push(new Dart(
+                    width / 2,
+                    height - 50,
+                    0,
+                    -DART_POWER,
+                    width / 2,
+                    height / 3
+                ));
+                
+                for (let i = 0; i < 10; i++) {
+                    particles.push(new Particle(
+                        width / 2, height - 50,
+                        (Math.random() - 0.5) * 1.5,
+                        -DART_POWER * 0.05 + (Math.random() - 0.5) * 1.5,
+                        '#ffff55',
+                        2 + Math.random() * 2,
+                        15 + Math.random() * 15
+                    ));
+                }
+            }
+            
+            // Dispara canhão com BARRA DE ESPAÇO
+            if (e.key === ' ' && activeTool === 'cannon') {
+                e.preventDefault();
+                // Cria evento simulado
+                const now = Date.now();
+                if (now - lastMouseDownTime > CLICK_THRESHOLD) {
+                    let event = new MouseEvent('mousedown', {
+                        clientX: width / 2,
+                        clientY: height / 2,
+                        bubbles: true,
+                        cancelable: true
+                    });
+                    window.dispatchEvent(event);
+                    
+                    // Também dispara mouseup após um delay
+                    setTimeout(() => {
+                        let upEvent = new MouseEvent('mouseup', {
+                            clientX: width / 2,
+                            clientY: height / 2,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        window.dispatchEvent(upEvent);
+                    }, 100);
+                }
+            }
+            
+            // Ativa/desativa lança-chamas com BARRA DE ESPAÇO
+            if (e.key === ' ' && activeTool === 'flame') {
+                e.preventDefault();
+                if (!flameActive) {
+                    flameActive = true;
+                    flameAngle = Math.atan2(height/2 - mouse.y, width/2 - mouse.x);
+                    createToolbar();
+                    toolIndicator.className = 'tool-indicator flame-active';
+                }
+            }
+        });
+        
+        window.addEventListener('keyup', function(e) {
+            if (e.key === ' ' && activeTool === 'flame' && flameActive) {
+                flameActive = false;
+                createToolbar();
+                toolIndicator.className = 'tool-indicator';
+            }
+        });
+        
+        // Foca no canvas quando clicado para garantir que teclas funcionem
+        canvas.addEventListener('click', () => {
+            canvas.focus();
+        });
+        
+        // Adiciona foco inicial
+        canvas.focus();
+
+        init();
+        animate();
+    </script>
+</body>
+</html>
