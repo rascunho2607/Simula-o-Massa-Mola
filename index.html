@@ -118,8 +118,8 @@
         }
         
         .ability-btn {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             background: rgba(0, 0, 0, 0.7);
             border: 2px solid rgba(255, 255, 255, 0.3);
@@ -163,9 +163,22 @@
             color: white;
         }
         
+        .ability-btn .hotkey {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            padding: 1px 4px;
+            font-size: 10px;
+            color: #55aaff;
+            font-weight: bold;
+        }
+        
         .ability-btn .tooltip {
             position: absolute;
-            left: 60px;
+            left: 70px;
             top: 50%;
             transform: translateY(-50%);
             background: rgba(0, 0, 0, 0.9);
@@ -700,6 +713,12 @@
             animation: levelUp 0.5s ease;
         }
         
+        /* Indicador de habilidade ativa */
+        .ability-active {
+            border-color: #ff55ff !important;
+            box-shadow: 0 0 15px rgba(255, 85, 255, 0.7) !important;
+        }
+        
         /* Para telas pequenas */
         @media (max-width: 768px) {
             .modal-content {
@@ -729,9 +748,9 @@
             }
             
             .ability-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 16px;
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
             }
             
             .toolbar {
@@ -973,38 +992,38 @@
         const specialAbilities = {
             cannon: {
                 'ricochet': { name: 'Ricochete', desc: 'Bola quica nas bordas', level: 0, maxLevel: 3, cost: [50, 100, 200], type: 'passive' },
-                'explosion': { name: 'Explosão', desc: 'Cria área de efeito ao atingir', level: 0, maxLevel: 2, cost: [100, 200], type: 'active', cooldown: 5000 },
+                'explosion': { name: 'Explosão', desc: 'Cria área de efeito ao atingir', level: 0, maxLevel: 2, cost: [100, 200], type: 'active', cooldown: 5000, hotkey: 'Q' },
                 'fragmentation': { name: 'Fragmentação', desc: 'Divide em múltiplas bolas', level: 0, maxLevel: 3, cost: [75, 150, 300], type: 'passive' },
-                'guided': { name: 'Teleguiado', desc: 'Controlável após disparo', level: 0, maxLevel: 1, cost: [250], type: 'active', cooldown: 10000 },
-                'rapidfire': { name: 'Furioso', desc: 'Dispara rajadas (3-5 tiros)', level: 0, maxLevel: 2, cost: [150, 300], type: 'active', cooldown: 8000 }
+                'guided': { name: 'Teleguiado', desc: 'Controlável após disparo', level: 0, maxLevel: 1, cost: [250], type: 'active', cooldown: 10000, hotkey: 'E' },
+                'rapidfire': { name: 'Furioso', desc: 'Dispara rajadas (3-5 tiros)', level: 0, maxLevel: 2, cost: [150, 300], type: 'passive' }
             },
             dart: {
-                'delayed': { name: 'Explosão Retardada', desc: 'Detona após tempo configurável', level: 0, maxLevel: 2, cost: [60, 120], type: 'active', cooldown: 6000 },
-                'chain': { name: 'Corrente Elétrica', desc: 'Conecta pontos com dano elétrico', level: 0, maxLevel: 2, cost: [100, 200], type: 'active', cooldown: 7000 },
+                'delayed': { name: 'Explosão Retardada', desc: 'Detona após tempo configurável', level: 0, maxLevel: 2, cost: [60, 120], type: 'active', cooldown: 6000, hotkey: 'Q' },
+                'chain': { name: 'Corrente Elétrica', desc: 'Conecta pontos com dano elétrico', level: 0, maxLevel: 2, cost: [100, 200], type: 'active', cooldown: 7000, hotkey: 'E' },
                 'multishot': { name: 'Multi-Dardo', desc: 'Dispara 3 dardos em leque', level: 0, maxLevel: 2, cost: [80, 160], type: 'passive' },
-                'magnet': { name: 'Ímã', desc: 'Atrai pontos próximos', level: 0, maxLevel: 2, cost: [90, 180], type: 'passive' },
-                'portal': { name: 'Portal', desc: 'Teletransporta tecido entre dois dardos', level: 0, maxLevel: 1, cost: [300], type: 'active', cooldown: 15000 }
+                'magnet': { name: 'Ímã', desc: 'Atrai pontos próximos', level: 0, maxLevel: 2, cost: [90, 180], type: 'active', cooldown: 8000, hotkey: 'R' },
+                'portal': { name: 'Portal', desc: 'Teletransporta tecido entre dois dardos', level: 0, maxLevel: 1, cost: [300], type: 'active', cooldown: 15000, hotkey: 'T' }
             },
             blower: {
-                'vortex': { name: 'Vórtice', desc: 'Cria redemoinho que persiste', level: 0, maxLevel: 2, cost: [70, 140], type: 'active', cooldown: 5000 },
-                'freeze': { name: 'Congelante', desc: 'Retarda/paralisa pontos', level: 0, maxLevel: 2, cost: [90, 180], type: 'active', cooldown: 6000 },
+                'vortex': { name: 'Vórtice', desc: 'Cria redemoinho que persiste', level: 0, maxLevel: 2, cost: [70, 140], type: 'active', cooldown: 5000, hotkey: 'Q' },
+                'freeze': { name: 'Congelante', desc: 'Retarda/paralisa pontos', level: 0, maxLevel: 2, cost: [90, 180], type: 'active', cooldown: 6000, hotkey: 'E' },
                 'repulse': { name: 'Repulsor', desc: 'Empurra com força aumentada', level: 0, maxLevel: 3, cost: [50, 100, 200], type: 'passive' },
-                'suction': { name: 'Sucção', desc: 'Puxa pontos para o centro', level: 0, maxLevel: 1, cost: [150], type: 'modal' },
-                'tornado': { name: 'Tornado', desc: 'Efeito em larga escala que se move', level: 0, maxLevel: 2, cost: [200, 400], type: 'active', cooldown: 12000 }
+                'suction': { name: 'Sucção', desc: 'Puxa pontos para o centro', level: 0, maxLevel: 1, cost: [150], type: 'modal', hotkey: 'R' },
+                'tornado': { name: 'Tornado', desc: 'Efeito em larga escala que se move', level: 0, maxLevel: 2, cost: [200, 400], type: 'active', cooldown: 12000, hotkey: 'T' }
             },
             flame: {
                 'spread': { name: 'Propagação', desc: 'Fogo se espalha mais rápido', level: 0, maxLevel: 3, cost: [60, 120, 240], type: 'passive' },
                 'colors': { name: 'Chamas Coloridas', desc: 'Diferentes cores com efeitos', level: 0, maxLevel: 2, cost: [80, 160], type: 'passive' },
-                'sparks': { name: 'Faíscas', desc: 'Dispara faíscas em todas as direções', level: 0, maxLevel: 2, cost: [100, 200], type: 'active', cooldown: 5000 },
-                'ring': { name: 'Anel de Fogo', desc: 'Cria perímetro de fogo', level: 0, maxLevel: 1, cost: [250], type: 'active', cooldown: 10000 },
-                'phoenix': { name: 'Fênix', desc: 'Ressurge das cinzas', level: 0, maxLevel: 1, cost: [400], type: 'active', cooldown: 30000 }
+                'sparks': { name: 'Faíscas', desc: 'Dispara faíscas em todas as direções', level: 0, maxLevel: 2, cost: [100, 200], type: 'active', cooldown: 5000, hotkey: 'Q' },
+                'ring': { name: 'Anel de Fogo', desc: 'Cria perímetro de fogo', level: 0, maxLevel: 1, cost: [250], type: 'active', cooldown: 10000, hotkey: 'E' },
+                'phoenix': { name: 'Fênix', desc: 'Ressurge das cinzas', level: 0, maxLevel: 1, cost: [400], type: 'active', cooldown: 30000, hotkey: 'R' }
             },
             mouse: {
-                'web': { name: 'Teia', desc: 'Cria conexões temporárias', level: 0, maxLevel: 2, cost: [50, 100], type: 'active', cooldown: 4000 },
-                'shield': { name: 'Campo de Força', desc: 'Área de proteção que repele', level: 0, maxLevel: 2, cost: [120, 240], type: 'active', cooldown: 8000 },
+                'web': { name: 'Teia', desc: 'Cria conexões temporárias', level: 0, maxLevel: 2, cost: [50, 100], type: 'active', cooldown: 4000, hotkey: 'Q' },
+                'shield': { name: 'Campo de Força', desc: 'Área de proteção que repele', level: 0, maxLevel: 2, cost: [120, 240], type: 'active', cooldown: 8000, hotkey: 'E' },
                 'slime': { name: 'Gosma', desc: 'Deixa pontos grudentos', level: 0, maxLevel: 2, cost: [70, 140], type: 'passive' },
-                'magnet': { name: 'Ímã Seletivo', desc: 'Atrai/repel seletivamente', level: 0, maxLevel: 2, cost: [90, 180], type: 'modal' },
-                'duplicate': { name: 'Duplicação', desc: 'Cria cópia espelhada', level: 0, maxLevel: 1, cost: [300], type: 'active', cooldown: 15000 }
+                'magnet': { name: 'Ímã Seletivo', desc: 'Atrai/repel seletivamente', level: 0, maxLevel: 2, cost: [90, 180], type: 'modal', hotkey: 'R' },
+                'duplicate': { name: 'Duplicação', desc: 'Cria cópia espelhada', level: 0, maxLevel: 1, cost: [300], type: 'active', cooldown: 15000, hotkey: 'T' }
             }
         };
 
@@ -1020,6 +1039,9 @@
         // Cooldowns das habilidades
         let abilityCooldowns = {};
         
+        // Estado de habilidades modais (ativas/desativas)
+        let modalAbilities = {};
+        
         // Sistema de XP
         let xpMultiplier = 1;
 
@@ -1032,7 +1054,7 @@
             while (playerData.xp >= playerData.xpToNextLevel) {
                 playerData.xp -= playerData.xpToNextLevel;
                 playerData.level++;
-                playerData.upgradePoints += 5; // Ganha pontos ao subir de nível
+                playerData.upgradePoints += 9999; // Ganha pontos ao subir de nível
                 playerData.xpToNextLevel = Math.floor(playerData.xpToNextLevel * 1.5);
                 
                 // Efeito visual de level up
@@ -1110,6 +1132,9 @@
         let burningPoints = new Set();
         let fireParticles = [];
         
+        // Estado do soprador (sopra/sucção)
+        let blowerMode = 'blow'; // 'blow' ou 'suction'
+        
         // Controle de estado da interface
         let isConfigModalOpen = false;
         let isUpgradeModalOpen = false;
@@ -1130,275 +1155,42 @@
         const defaultConfig = {...config};
 
         // ==============================================
-        // 2. MODAL DE UPGRADES GERAIS
-        // ==============================================
-        function createUpgradeModal() {
-            const upgradeTabs = document.getElementById('upgradeTabs');
-            const upgradeContent = document.getElementById('upgradeContent');
-            
-            upgradeTabs.innerHTML = '';
-            upgradeContent.innerHTML = '';
-            
-            // Criar tabs para cada ferramenta
-            Object.keys(tools).forEach(toolId => {
-                const tool = tools[toolId];
-                const tab = document.createElement('div');
-                tab.className = 'tab';
-                tab.textContent = `${tool.icon} ${tool.name}`;
-                tab.dataset.tool = toolId;
-                
-                tab.addEventListener('click', () => {
-                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    showToolUpgrades(toolId);
-                });
-                
-                upgradeTabs.appendChild(tab);
-            });
-            
-            // Ativar primeira tab
-            const firstTab = upgradeTabs.querySelector('.tab');
-            if (firstTab) {
-                firstTab.classList.add('active');
-                showToolUpgrades(firstTab.dataset.tool);
-            }
-        }
-        
-        function showToolUpgrades(toolId) {
-            const upgradeContent = document.getElementById('upgradeContent');
-            const toolData = playerData.tools[toolId];
-            
-            upgradeContent.innerHTML = `
-                <div class="upgrade-section">
-                    <h3>${tools[toolId].name} - Nível ${toolData.level}</h3>
-                    <div class="upgrade-grid">
-                        <div class="upgrade-card ${canUpgrade(toolId, 'force') ? 'upgradable' : ''}" 
-                             onclick="${canUpgrade(toolId, 'force') ? `upgradeTool('${toolId}', 'force')` : ''}">
-                            <div class="upgrade-header">
-                                <div class="upgrade-name">Força</div>
-                                <div class="upgrade-level">Nv. ${toolData.force}</div>
-                            </div>
-                            <div class="upgrade-stats">
-                                Aumenta a intensidade do efeito
-                            </div>
-                            <div class="upgrade-cost">
-                                <span>Custo:</span>
-                                <span class="cost-value">${getUpgradeCost(toolData.force)}⭐</span>
-                            </div>
-                        </div>
-                        
-                        <div class="upgrade-card ${canUpgrade(toolId, 'range') ? 'upgradable' : ''}" 
-                             onclick="${canUpgrade(toolId, 'range') ? `upgradeTool('${toolId}', 'range')` : ''}">
-                            <div class="upgrade-header">
-                                <div class="upgrade-name">Alcance</div>
-                                <div class="upgrade-level">Nv. ${toolData.range}</div>
-                            </div>
-                            <div class="upgrade-stats">
-                                Aumenta a área de influência
-                            </div>
-                            <div class="upgrade-cost">
-                                <span>Custo:</span>
-                                <span class="cost-value">${getUpgradeCost(toolData.range)}⭐</span>
-                            </div>
-                        </div>
-                        
-                        <div class="upgrade-card ${canUpgrade(toolId, 'efficiency') ? 'upgradable' : ''}" 
-                             onclick="${canUpgrade(toolId, 'efficiency') ? `upgradeTool('${toolId}', 'efficiency')` : ''}">
-                            <div class="upgrade-header">
-                                <div class="upgrade-name">Eficiência</div>
-                                <div class="upgrade-level">Nv. ${toolData.efficiency}</div>
-                            </div>
-                            <div class="upgrade-stats">
-                                Reduz custo em recursos/cooldown
-                            </div>
-                            <div class="upgrade-cost">
-                                <span>Custo:</span>
-                                <span class="cost-value">${getUpgradeCost(toolData.efficiency)}⭐</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Recalcular atributos base
-            calculateBaseAttributes();
-        }
-        
-        function canUpgrade(toolId, attribute) {
-            const cost = getUpgradeCost(playerData.tools[toolId][attribute]);
-            return playerData.upgradePoints >= cost && playerData.tools[toolId][attribute] < 10;
-        }
-        
-        function getUpgradeCost(currentLevel) {
-            return Math.floor(10 * Math.pow(1.5, currentLevel));
-        }
-        
-        function upgradeTool(toolId, attribute) {
-            if (!canUpgrade(toolId, attribute)) return;
-            
-            const cost = getUpgradeCost(playerData.tools[toolId][attribute]);
-            playerData.upgradePoints -= cost;
-            playerData.tools[toolId][attribute]++;
-            
-            // Subir nível da ferramenta se todos atributos aumentaram
-            const tool = playerData.tools[toolId];
-            const avgLevel = (tool.force + tool.range + tool.efficiency) / 3;
-            tool.level = Math.floor(avgLevel);
-            
-            // Ganha XP pela melhoria
-            gainXP(cost);
-            
-            // Recalcular atributos
-            calculateBaseAttributes();
-            
-            // Atualizar display
-            updatePlayerDisplay();
-            showToolUpgrades(toolId);
-            saveGame();
-        }
-        
-        function calculateBaseAttributes() {
-            const cannonLvl = playerData.tools.cannon.level;
-            const dartLvl = playerData.tools.dart.level;
-            const blowerLvl = playerData.tools.blower.level;
-            const flameLvl = playerData.tools.flame.level;
-            const mouseLvl = playerData.tools.mouse.level;
-            
-            CANNON_POWER = 25 * (1 + cannonLvl * 0.2);
-            DART_POWER = 22 * (1 + dartLvl * 0.2);
-            BLOWER_POWER = 0.2 * (1 + blowerLvl * 0.3);
-            FLAME_POWER = 0.3 * (1 + flameLvl * 0.25);
-            MOUSE_POWER = 0.5 * (1 + mouseLvl * 0.2);
-        }
-
-        // ==============================================
-        // 3. MODAL DE HABILIDADES ESPECIAIS
-        // ==============================================
-        function createSpecialModal() {
-            const specialTabs = document.getElementById('specialTabs');
-            const specialContent = document.getElementById('specialContent');
-            
-            specialTabs.innerHTML = '';
-            specialContent.innerHTML = '';
-            
-            // Criar tabs para cada ferramenta
-            Object.keys(tools).forEach(toolId => {
-                const tool = tools[toolId];
-                const tab = document.createElement('div');
-                tab.className = 'tab';
-                tab.textContent = `${tool.icon} ${tool.name}`;
-                tab.dataset.tool = toolId;
-                
-                tab.addEventListener('click', () => {
-                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    showToolAbilities(toolId);
-                });
-                
-                specialTabs.appendChild(tab);
-            });
-            
-            // Ativar primeira tab
-            const firstTab = specialTabs.querySelector('.tab');
-            if (firstTab) {
-                firstTab.classList.add('active');
-                showToolAbilities(firstTab.dataset.tool);
-            }
-        }
-        
-        function showToolAbilities(toolId) {
-            const specialContent = document.getElementById('specialContent');
-            const abilities = specialAbilities[toolId];
-            
-            let html = `<div class="upgrade-section"><h3>${tools[toolId].name} - Habilidades Especiais</h3><div class="upgrade-grid">`;
-            
-            Object.keys(abilities).forEach(abilityId => {
-                const ability = abilities[abilityId];
-                const currentLevel = ability.level || 0;
-                const canUpgrade = currentLevel < ability.maxLevel && playerData.upgradePoints >= ability.cost[currentLevel];
-                
-                html += `
-                    <div class="upgrade-card ${canUpgrade ? 'upgradable' : ''} ${currentLevel >= ability.maxLevel ? 'locked' : ''}" 
-                         onclick="${canUpgrade ? `upgradeAbility('${toolId}', '${abilityId}')` : ''}">
-                        <div class="upgrade-header">
-                            <div class="upgrade-name">${ability.name}</div>
-                            <div class="upgrade-level">Nv. ${currentLevel}/${ability.maxLevel}</div>
-                        </div>
-                        <div class="upgrade-stats">
-                            ${ability.desc}<br>
-                            <small>Tipo: ${ability.type === 'passive' ? 'Passiva' : ability.type === 'modal' ? 'Modal' : 'Ativa'}</small>
-                        </div>
-                        <div class="upgrade-cost">
-                            <span>Custo:</span>
-                            <span class="cost-value">${currentLevel < ability.maxLevel ? ability.cost[currentLevel] : 'MAX'}⭐</span>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            html += `</div></div>`;
-            specialContent.innerHTML = html;
-        }
-        
-        function upgradeAbility(toolId, abilityId) {
-            const ability = specialAbilities[toolId][abilityId];
-            const currentLevel = ability.level || 0;
-            
-            if (currentLevel >= ability.maxLevel) return;
-            if (playerData.upgradePoints < ability.cost[currentLevel]) return;
-            
-            playerData.upgradePoints -= ability.cost[currentLevel];
-            ability.level = currentLevel + 1;
-            
-            // Adicionar habilidade à lista de ativas se for do tipo ativa ou modal
-            if (ability.type === 'active' || ability.type === 'modal') {
-                if (!activeAbilities[toolId].includes(abilityId)) {
-                    activeAbilities[toolId].push(abilityId);
-                    updateAbilitiesBar();
-                }
-            }
-            
-            // Ganha XP pela melhoria
-            gainXP(ability.cost[currentLevel]);
-            
-            // Atualizar display
-            updatePlayerDisplay();
-            showToolAbilities(toolId);
-            saveGame();
-        }
-
-        // ==============================================
-        // 4. SISTEMA DE ATIVAÇÃO DE HABILIDADES
+        // 4. SISTEMA DE ATIVAÇÃO DE HABILIDADES (CORRIGIDO)
         // ==============================================
         function updateAbilitiesBar() {
             abilitiesBar.innerHTML = '';
             
             const abilities = activeAbilities[activeTool];
-            abilities.forEach(abilityId => {
+            const hotkeys = ['Q', 'E', 'R', 'T', 'Y'];
+            
+            abilities.forEach((abilityId, index) => {
                 const ability = specialAbilities[activeTool][abilityId];
-                if (!ability || ability.level === 0) return;
+                if (!ability || ability.level === 0 || ability.type === 'passive') return;
                 
                 const btn = document.createElement('div');
                 btn.className = 'ability-btn';
                 btn.dataset.ability = abilityId;
-                btn.title = ability.name;
+                btn.dataset.hotkey = hotkeys[index] || '';
+                btn.title = `${ability.name} (${hotkeys[index] || 'Clique'})`;
                 
-                // Ícone baseado na ferramenta
-                let icon = '✨';
-                if (activeTool === 'cannon') icon = '🎯';
-                else if (activeTool === 'dart') icon = '📍';
-                else if (activeTool === 'blower') icon = '💨';
-                else if (activeTool === 'flame') icon = '🔥';
-                else if (activeTool === 'mouse') icon = '🖱️';
+                // Ícone baseado na ferramenta e habilidade
+                let icon = getAbilityIcon(activeTool, abilityId);
                 
                 btn.innerHTML = `
                     ${icon}
+                    <div class="hotkey">${hotkeys[index] || ''}</div>
                     <div class="tooltip">
                         <div class="ability-name">${ability.name}</div>
                         <div class="ability-desc">${ability.desc}</div>
                         <div class="ability-desc">Nível: ${ability.level}/${ability.maxLevel}</div>
+                        <div class="ability-desc">Tecla: ${hotkeys[index] || 'Clique'}</div>
                     </div>
                 `;
+                
+                // Verificar se é habilidade modal ativa
+                if (ability.type === 'modal' && modalAbilities[abilityId]) {
+                    btn.classList.add('ability-active');
+                }
                 
                 // Adicionar cooldown se houver
                 if (ability.cooldown && abilityCooldowns[abilityId]) {
@@ -1406,90 +1198,622 @@
                     cooldownDiv.className = 'cooldown';
                     cooldownDiv.textContent = Math.ceil(abilityCooldowns[abilityId] / 1000);
                     btn.appendChild(cooldownDiv);
-                    btn.classList.add('disabled');
                 }
                 
                 btn.addEventListener('click', () => {
-                    if (!abilityCooldowns[abilityId]) {
-                        activateAbility(abilityId);
-                    }
+                    activateAbility(abilityId);
                 });
                 
                 abilitiesBar.appendChild(btn);
             });
         }
         
+        function getAbilityIcon(toolId, abilityId) {
+            const icons = {
+                cannon: {
+                    'explosion': '💥',
+                    'guided': '🎯',
+                    'default': '🎯'
+                },
+                dart: {
+                    'delayed': '⏱️',
+                    'chain': '⚡',
+                    'magnet': '🧲',
+                    'portal': '🌀',
+                    'default': '📍'
+                },
+                blower: {
+                    'vortex': '🌪️',
+                    'freeze': '❄️',
+                    'suction': '👇',
+                    'tornado': '🌪️',
+                    'default': '💨'
+                },
+                flame: {
+                    'sparks': '✨',
+                    'ring': '🔥',
+                    'phoenix': '🦅',
+                    'default': '🔥'
+                },
+                mouse: {
+                    'web': '🕸️',
+                    'shield': '🛡️',
+                    'magnet': '🧲',
+                    'duplicate': '👯',
+                    'default': '🖱️'
+                }
+            };
+            
+            return icons[toolId]?.[abilityId] || icons[toolId]?.default || '✨';
+        }
+        
         function activateAbility(abilityId) {
             const ability = specialAbilities[activeTool][abilityId];
             if (!ability || ability.level === 0) return;
             
+            // Verificar cooldown - PERMITE ATIVAÇÃO MESMO NO COOLDOWN
+            const currentTime = Date.now();
+            const lastActivation = abilityCooldowns[`${abilityId}_last`] || 0;
+            const cooldownRemaining = ability.cooldown ? (lastActivation + ability.cooldown) - currentTime : 0;
+            
+            if (cooldownRemaining > 0) {
+                // Habilidade em cooldown - mostrar feedback mas permitir ativação
+                console.log(`${ability.name} em cooldown: ${Math.ceil(cooldownRemaining/1000)}s restantes`);
+                return; // Não ativa se estiver em cooldown
+            }
+            
             // Aplicar efeitos baseados na habilidade
-            switch (abilityId) {
-                case 'explosion':
-                    createExplosion(mouse.x, mouse.y);
+            let effectApplied = false;
+            
+            switch(activeTool) {
+                case 'cannon':
+                    effectApplied = activateCannonAbility(abilityId);
                     break;
-                case 'chain':
-                    createChainLightning();
+                case 'dart':
+                    effectApplied = activateDartAbility(abilityId);
                     break;
-                case 'vortex':
-                    createVortex(mouse.x, mouse.y);
+                case 'blower':
+                    effectApplied = activateBlowerAbility(abilityId);
                     break;
-                case 'freeze':
-                    freezeArea(mouse.x, mouse.y);
+                case 'flame':
+                    effectApplied = activateFlameAbility(abilityId);
                     break;
-                case 'sparks':
-                    createSparks(mouse.x, mouse.y);
+                case 'mouse':
+                    effectApplied = activateMouseAbility(abilityId);
                     break;
-                case 'ring':
-                    createFireRing(mouse.x, mouse.y);
-                    break;
-                case 'web':
-                    createWeb(mouse.x, mouse.y);
-                    break;
-                case 'shield':
-                    createForceField(mouse.x, mouse.y);
-                    break;
-                // Adicione mais habilidades aqui
             }
             
-            // Definir cooldown
-            if (ability.cooldown) {
-                abilityCooldowns[abilityId] = ability.cooldown;
+            if (effectApplied) {
+                // Definir cooldown se a habilidade foi ativada
+                if (ability.cooldown) {
+                    abilityCooldowns[abilityId] = ability.cooldown;
+                    abilityCooldowns[`${abilityId}_last`] = currentTime;
+                    
+                    // Iniciar contagem regressiva do cooldown
+                    const cooldownInterval = setInterval(() => {
+                        abilityCooldowns[abilityId] -= 100;
+                        if (abilityCooldowns[abilityId] <= 0) {
+                            clearInterval(cooldownInterval);
+                            delete abilityCooldowns[abilityId];
+                            updateAbilitiesBar();
+                        } else {
+                            updateAbilitiesBar();
+                        }
+                    }, 100);
+                }
+                
+                // Ganhar XP por usar habilidade
+                gainXP(15);
+                
+                // Atualizar barra de habilidades
                 updateAbilitiesBar();
-                
-                // Reduzir cooldown baseado na eficiência da ferramenta
-                const efficiency = playerData.tools[activeTool].efficiency;
-                const cooldownReduction = 1 - (efficiency * 0.1);
-                
-                const cooldownInterval = setInterval(() => {
-                    abilityCooldowns[abilityId] -= 100;
-                    if (abilityCooldowns[abilityId] <= 0) {
-                        clearInterval(cooldownInterval);
-                        delete abilityCooldowns[abilityId];
-                        updateAbilitiesBar();
-                    } else {
-                        updateAbilitiesBar();
-                    }
-                }, 100);
             }
-            
-            // Ganhar XP por usar habilidade
-            gainXP(10);
         }
         
-        // Implementações de efeitos das habilidades
-        function createExplosion(x, y) {
+        // ==============================================
+        // HABILIDADES DO CANHÃO (CORRIGIDAS)
+        // ==============================================
+        function activateCannonAbility(abilityId) {
+            switch(abilityId) {
+                case 'explosion':
+                    // Explosão em todas as bolas de canhão ativas
+                    cannonballs.forEach(ball => {
+                        createExplosion(ball.x, ball.y, 1.5);
+                        ball.active = false;
+                    });
+                    return true;
+                    
+                case 'guided':
+                    // Tornar bolas de canhão teleguiadas
+                    cannonballs.forEach(ball => {
+                        ball.guided = true;
+                        ball.guideTime = 300; // 5 segundos a 60fps
+                    });
+                    return true;
+            }
+            return false;
+        }
+        
+        // ==============================================
+        // HABILIDADES DOS DARDOS (CORRIGIDAS)
+        // ==============================================
+        function activateDartAbility(abilityId) {
+            const stuckDarts = darts.filter(d => d.stuck);
+            if (stuckDarts.length === 0) return false;
+            
+            switch(abilityId) {
+                case 'delayed':
+                    // Explosão retardada em todos os dardos
+                    stuckDarts.forEach(dart => {
+                        setTimeout(() => {
+                            if (dart.stuckPoint) {
+                                createExplosion(dart.x, dart.y, 1.0);
+                                // Liberar ponto preso
+                                if (dart.stuckPoint) {
+                                    dart.stuckPoint.unpinByDart();
+                                    dart.stuck = false;
+                                    dart.active = false;
+                                }
+                            }
+                        }, 2000); // 2 segundos de delay
+                    });
+                    return true;
+                    
+                case 'chain':
+                    // Corrente elétrica entre dardos
+                    createChainLightning(stuckDarts);
+                    return true;
+                    
+                case 'magnet':
+                    // Ímã que atrai pontos próximos aos dardos
+                    activateDartMagnet(stuckDarts);
+                    return true;
+                    
+                case 'portal':
+                    // Portal entre dois dardos
+                    if (stuckDarts.length >= 2) {
+                        createPortal(stuckDarts[0], stuckDarts[1]);
+                        return true;
+                    }
+                    break;
+            }
+            return false;
+        }
+        
+        function createChainLightning(stuckDarts) {
+            if (stuckDarts.length < 2) return;
+            
+            // Conectar todos os dardos em sequência
+            for (let i = 0; i < stuckDarts.length - 1; i++) {
+                const dart1 = stuckDarts[i];
+                const dart2 = stuckDarts[i + 1];
+                
+                // Criar efeito visual de corrente elétrica
+                createLightningEffect(dart1.x, dart1.y, dart2.x, dart2.y);
+                
+                // Aplicar força aos pontos ao longo do caminho
+                const steps = 10;
+                for (let j = 0; j <= steps; j++) {
+                    const t = j / steps;
+                    const x = dart1.x + (dart2.x - dart1.x) * t;
+                    const y = dart1.y + (dart2.y - dart1.y) * t;
+                    
+                    // Aplicar choque em pontos próximos
+                    points.forEach(p => {
+                        if (p.pinned) return;
+                        const dx = p.x - x;
+                        const dy = p.y - y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (dist < 30) {
+                            p.px += (Math.random() - 0.5) * 10;
+                            p.py += (Math.random() - 0.5) * 10;
+                            
+                            // Efeito visual de eletricidade
+                            if (Math.random() < 0.3) {
+                                particles.push(new Particle(
+                                    p.x, p.y,
+                                    (Math.random() - 0.5) * 5,
+                                    (Math.random() - 0.5) * 5,
+                                    '#00ffff',
+                                    2 + Math.random() * 3,
+                                    20 + Math.random() * 20
+                                ));
+                            }
+                        }
+                    });
+                }
+            }
+            
+            // Efeito sonoro visual
+            for (let i = 0; i < 20; i++) {
+                const dart = stuckDarts[Math.floor(Math.random() * stuckDarts.length)];
+                particles.push(new Particle(
+                    dart.x + (Math.random() - 0.5) * 20,
+                    dart.y + (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 8,
+                    (Math.random() - 0.5) * 8,
+                    '#00ffff',
+                    3 + Math.random() * 4,
+                    30 + Math.random() * 30
+                ));
+            }
+        }
+        
+        function createLightningEffect(x1, y1, x2, y2) {
+            const segments = 8;
+            let lastX = x1;
+            let lastY = y1;
+            
+            for (let i = 1; i <= segments; i++) {
+                const t = i / segments;
+                const baseX = x1 + (x2 - x1) * t;
+                const baseY = y1 + (y2 - y1) * t;
+                
+                // Adicionar variação aleatória para parecer um raio
+                const offsetX = (Math.random() - 0.5) * 30;
+                const offsetY = (Math.random() - 0.5) * 30;
+                
+                const currentX = baseX + offsetX;
+                const currentY = baseY + offsetY;
+                
+                // Desenhar segmento do raio
+                ctx.save();
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.8;
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(currentX, currentY);
+                ctx.stroke();
+                ctx.restore();
+                
+                // Adicionar partículas
+                for (let j = 0; j < 3; j++) {
+                    particles.push(new Particle(
+                        (lastX + currentX) / 2,
+                        (lastY + currentY) / 2,
+                        (Math.random() - 0.5) * 4,
+                        (Math.random() - 0.5) * 4,
+                        '#00ffff',
+                        2 + Math.random() * 2,
+                        15 + Math.random() * 15
+                    ));
+                }
+                
+                lastX = currentX;
+                lastY = currentY;
+            }
+        }
+        
+        function activateDartMagnet(stuckDarts) {
+            const magnetStrength = 0.5;
+            const magnetRadius = 150;
+            
+            stuckDarts.forEach(dart => {
+                // Atrair pontos próximos
+                points.forEach(p => {
+                    if (p.pinned || p.dartId === dart.id) return;
+                    
+                    const dx = p.x - dart.x;
+                    const dy = p.y - dart.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < magnetRadius && dist > 0) {
+                        const force = magnetStrength * (1 - dist / magnetRadius);
+                        p.px -= (dx / dist) * force;
+                        p.py -= (dy / dist) * force;
+                        
+                        // Efeito visual
+                        if (Math.random() < 0.05) {
+                            particles.push(new Particle(
+                                p.x, p.y,
+                                (-dx / dist) * 2,
+                                (-dy / dist) * 2,
+                                '#ffff00',
+                                2 + Math.random() * 2,
+                                20 + Math.random() * 20
+                            ));
+                        }
+                    }
+                });
+                
+                // Efeito visual do ímã
+                for (let i = 0; i < 10; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = Math.random() * magnetRadius;
+                    particles.push(new Particle(
+                        dart.x + Math.cos(angle) * radius,
+                        dart.y + Math.sin(angle) * radius,
+                        -Math.cos(angle) * 0.5,
+                        -Math.sin(angle) * 0.5,
+                        '#ffff00',
+                        1 + Math.random() * 2,
+                        30 + Math.random() * 30
+                    ));
+                }
+            });
+            
+            // Efeito persistente por 3 segundos
+            setTimeout(() => {
+                // Limpar efeito
+            }, 3000);
+        }
+        
+        function createPortal(dart1, dart2) {
+            const portalRadius = 40;
+            const portalDuration = 5000; // 5 segundos
+            
+            // Criar efeito visual dos portais
+            createPortalEffect(dart1.x, dart1.y, portalRadius, '#ff00ff');
+            createPortalEffect(dart2.x, dart2.y, portalRadius, '#00ffff');
+            
+            // Efeito de teletransporte
+            const portalInterval = setInterval(() => {
+                // Verificar pontos próximos ao portal 1
+                points.forEach(p => {
+                    if (p.pinned) return;
+                    
+                    const dx1 = p.x - dart1.x;
+                    const dy1 = p.y - dart1.y;
+                    const dist1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+                    
+                    if (dist1 < portalRadius) {
+                        // Teletransportar para portal 2
+                        p.x = dart2.x + (Math.random() - 0.5) * 10;
+                        p.y = dart2.y + (Math.random() - 0.5) * 10;
+                        p.px = p.x;
+                        p.py = p.y;
+                        
+                        // Efeito visual
+                        for (let i = 0; i < 5; i++) {
+                            particles.push(new Particle(
+                                dart1.x, dart1.y,
+                                (Math.random() - 0.5) * 5,
+                                (Math.random() - 0.5) * 5,
+                                '#ff00ff',
+                                3 + Math.random() * 3,
+                                30 + Math.random() * 30
+                            ));
+                            
+                            particles.push(new Particle(
+                                dart2.x, dart2.y,
+                                (Math.random() - 0.5) * 5,
+                                (Math.random() - 0.5) * 5,
+                                '#00ffff',
+                                3 + Math.random() * 3,
+                                30 + Math.random() * 30
+                            ));
+                        }
+                    }
+                    
+                    // Verificar pontos próximos ao portal 2
+                    const dx2 = p.x - dart2.x;
+                    const dy2 = p.y - dart2.y;
+                    const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                    
+                    if (dist2 < portalRadius) {
+                        // Teletransportar para portal 1
+                        p.x = dart1.x + (Math.random() - 0.5) * 10;
+                        p.y = dart1.y + (Math.random() - 0.5) * 10;
+                        p.px = p.x;
+                        p.py = p.y;
+                    }
+                });
+            }, 100);
+            
+            // Remover portais após duração
+            setTimeout(() => {
+                clearInterval(portalInterval);
+            }, portalDuration);
+        }
+        
+        function createPortalEffect(x, y, radius, color) {
+            // Anel do portal
+            for (let i = 0; i < 20; i++) {
+                const angle = (i / 20) * Math.PI * 2;
+                particles.push(new Particle(
+                    x + Math.cos(angle) * radius,
+                    y + Math.sin(angle) * radius,
+                    Math.cos(angle + Math.PI/2) * 2,
+                    Math.sin(angle + Math.PI/2) * 2,
+                    color,
+                    3 + Math.random() * 2,
+                    100 + Math.random() * 100
+                ));
+            }
+            
+            // Centro do portal
+            for (let i = 0; i < 30; i++) {
+                particles.push(new Particle(
+                    x + (Math.random() - 0.5) * radius * 0.5,
+                    y + (Math.random() - 0.5) * radius * 0.5,
+                    (Math.random() - 0.5) * 3,
+                    (Math.random() - 0.5) * 3,
+                    color,
+                    2 + Math.random() * 3,
+                    50 + Math.random() * 50
+                ));
+            }
+        }
+        
+        // ==============================================
+        // HABILIDADES DO SOPRADOR (CORRIGIDAS)
+        // ==============================================
+        function activateBlowerAbility(abilityId) {
+            switch(abilityId) {
+                case 'vortex':
+                    createVortex(mouse.x, mouse.y);
+                    return true;
+                    
+                case 'freeze':
+                    freezeArea(mouse.x, mouse.y);
+                    return true;
+                    
+                case 'suction':
+                    // Alternar entre modo sopro e sucção
+                    blowerMode = blowerMode === 'blow' ? 'suction' : 'blow';
+                    modalAbilities['suction'] = blowerMode === 'suction';
+                    updateAbilitiesBar();
+                    return true;
+                    
+                case 'tornado':
+                    createTornado(mouse.x, mouse.y);
+                    return true;
+            }
+            return false;
+        }
+        
+        function createVortex(x, y) {
+            const vortex = {
+                x, y, strength: 8, life: 300, radius: 120
+            };
+            
+            const vortexInterval = setInterval(() => {
+                points.forEach(p => {
+                    if (p.pinned || p.frozen) return;
+                    const dx = p.x - vortex.x;
+                    const dy = p.y - vortex.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < vortex.radius) {
+                        const force = (1 - dist / vortex.radius) * vortex.strength * 0.15;
+                        // Força circular (vórtice)
+                        p.px += (-dy / dist) * force;
+                        p.py += (dx / dist) * force;
+                        // Força centrípeta leve
+                        p.px -= (dx / dist) * force * 0.3;
+                        p.py -= (dy / dist) * force * 0.3;
+                    }
+                });
+                
+                // Efeito visual
+                if (Math.random() < 0.3) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = Math.random() * vortex.radius;
+                    particles.push(new Particle(
+                        vortex.x + Math.cos(angle) * radius,
+                        vortex.y + Math.sin(angle) * radius,
+                        -Math.sin(angle) * 2,
+                        Math.cos(angle) * 2,
+                        '#55aaff',
+                        2 + Math.random() * 3,
+                        40 + Math.random() * 40
+                    ));
+                }
+                
+                vortex.life--;
+                if (vortex.life <= 0) {
+                    clearInterval(vortexInterval);
+                }
+            }, 16);
+            
+            return true;
+        }
+        
+        function createTornado(x, y) {
+            const tornado = {
+                x, y, strength: 12, life: 400, radius: 150, vx: (Math.random() - 0.5) * 2, vy: -1
+            };
+            
+            const tornadoInterval = setInterval(() => {
+                // Mover tornado
+                tornado.x += tornado.vx;
+                tornado.y += tornado.vy;
+                
+                // Aplicar força aos pontos
+                points.forEach(p => {
+                    if (p.pinned || p.frozen) return;
+                    const dx = p.x - tornado.x;
+                    const dy = p.y - tornado.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < tornado.radius) {
+                        const force = (1 - dist / tornado.radius) * tornado.strength * 0.2;
+                        // Força circular forte
+                        p.px += (-dy / dist) * force * 1.5;
+                        p.py += (dx / dist) * force * 1.5;
+                        // Força para cima
+                        p.py -= force * 0.8;
+                    }
+                });
+                
+                // Efeito visual
+                if (Math.random() < 0.5) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = Math.random() * tornado.radius * 0.7;
+                    particles.push(new Particle(
+                        tornado.x + Math.cos(angle) * radius,
+                        tornado.y + Math.sin(angle) * radius,
+                        -Math.sin(angle) * 3 + (Math.random() - 0.5),
+                        Math.cos(angle) * 3 - 2 + (Math.random() - 0.5),
+                        '#ffffff',
+                        3 + Math.random() * 4,
+                        60 + Math.random() * 60
+                    ));
+                }
+                
+                tornado.life--;
+                if (tornado.life <= 0 || tornado.y < -100) {
+                    clearInterval(tornadoInterval);
+                }
+            }, 16);
+            
+            return true;
+        }
+        
+        // ==============================================
+        // HABILIDADES DO FOGO E MOUSE
+        // ==============================================
+        function activateFlameAbility(abilityId) {
+            switch(abilityId) {
+                case 'sparks':
+                    createSparks(mouse.x, mouse.y);
+                    return true;
+                    
+                case 'ring':
+                    createFireRing(mouse.x, mouse.y);
+                    return true;
+                    
+                case 'phoenix':
+                    activatePhoenix();
+                    return true;
+            }
+            return false;
+        }
+        
+        function activateMouseAbility(abilityId) {
+            switch(abilityId) {
+                case 'web':
+                    createWeb(mouse.x, mouse.y);
+                    return true;
+                    
+                case 'shield':
+                    createForceField(mouse.x, mouse.y);
+                    return true;
+                    
+                case 'duplicate':
+                    duplicateMouseEffect();
+                    return true;
+            }
+            return false;
+        }
+        
+        // ==============================================
+        // FUNÇÕES AUXILIARES
+        // ==============================================
+        function createExplosion(x, y, intensity = 1.0) {
             // Criar explosão visual
-            for (let i = 0; i < 50; i++) {
+            for (let i = 0; i < 50 * intensity; i++) {
                 const angle = Math.random() * Math.PI * 2;
-                const speed = 2 + Math.random() * 3;
+                const speed = 2 + Math.random() * 3 * intensity;
                 particles.push(new Particle(
                     x, y,
                     Math.cos(angle) * speed,
                     Math.sin(angle) * speed,
                     '#ff5500',
-                    3 + Math.random() * 4,
-                    30 + Math.random() * 30
+                    3 + Math.random() * 4 * intensity,
+                    30 + Math.random() * 30 * intensity
                 ));
             }
             
@@ -1500,100 +1824,151 @@
                 const dy = p.y - y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 
-                if (dist < 100) {
-                    const force = (1 - dist / 100) * 10;
+                if (dist < 100 * intensity) {
+                    const force = (1 - dist / (100 * intensity)) * 10 * intensity;
                     p.px -= (dx / dist) * force;
                     p.py -= (dy / dist) * force;
                 }
             });
         }
         
-        function createVortex(x, y) {
-            // Criar vórtice persistente
-            const vortex = {
-                x, y, strength: 5, life: 300
+        function freezeArea(x, y) {
+            const freezeRadius = 100;
+            const freezeDuration = 200;
+            
+            points.forEach(p => {
+                const dx = p.x - x;
+                const dy = p.y - y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < freezeRadius) {
+                    p.freeze(freezeDuration);
+                    
+                    // Efeito visual de congelamento
+                    if (Math.random() < 0.3) {
+                        particles.push(new Particle(
+                            p.x, p.y,
+                            (Math.random() - 0.5) * 2,
+                            (Math.random() - 0.5) * 2,
+                            '#55aaff',
+                            2 + Math.random() * 3,
+                            30 + Math.random() * 30
+                        ));
+                    }
+                }
+            });
+            
+            // Efeito central
+            for (let i = 0; i < 20; i++) {
+                particles.push(new Particle(
+                    x + (Math.random() - 0.5) * freezeRadius,
+                    y + (Math.random() - 0.5) * freezeRadius,
+                    (Math.random() - 0.5) * 3,
+                    (Math.random() - 0.5) * 3,
+                    '#55aaff',
+                    3 + Math.random() * 4,
+                    40 + Math.random() * 40
+                ));
+            }
+        }
+        
+        function createSparks(x, y) {
+            for (let i = 0; i < 40; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 4 + Math.random() * 5;
+                fireParticles.push(new FireParticle(
+                    x, y,
+                    Math.cos(angle) * speed,
+                    Math.sin(angle) * speed,
+                    0.8 + Math.random() * 0.4
+                ));
+            }
+        }
+        
+        function activatePhoenix() {
+            // Ressurgir pontos queimados
+            let restored = 0;
+            points.forEach(p => {
+                if (p.isBurning && Math.random() < 0.7) {
+                    p.extinguish();
+                    p.burnTime = 0;
+                    
+                    // Efeito visual de renascimento
+                    for (let i = 0; i < 5; i++) {
+                        particles.push(new Particle(
+                            p.x, p.y,
+                            (Math.random() - 0.5) * 3,
+                            -Math.random() * 2 - 1,
+                            '#ffaa00',
+                            3 + Math.random() * 3,
+                            40 + Math.random() * 40
+                        ));
+                    }
+                    restored++;
+                }
+            });
+            
+            // Efeito da fênix
+            for (let i = 0; i < 50; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * 100;
+                particles.push(new Particle(
+                    mouse.x + Math.cos(angle) * radius,
+                    mouse.y + Math.sin(angle) * radius,
+                    -Math.cos(angle) * 2,
+                    -Math.sin(angle) * 2,
+                    '#ff5500',
+                    4 + Math.random() * 5,
+                    60 + Math.random() * 60
+                ));
+            }
+        }
+        
+        function duplicateMouseEffect() {
+            // Criar um segundo ponto de interação simétrico
+            const duplicateMouse = {
+                x: width - mouse.x,
+                y: mouse.y,
+                active: true,
+                life: 300
             };
             
-            const vortexInterval = setInterval(() => {
+            const duplicateInterval = setInterval(() => {
                 points.forEach(p => {
                     if (p.pinned) return;
-                    const dx = p.x - vortex.x;
-                    const dy = p.y - vortex.y;
+                    const dx = p.x - duplicateMouse.x;
+                    const dy = p.y - duplicateMouse.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     
-                    if (dist < 150) {
-                        const force = (1 - dist / 150) * vortex.strength * 0.1;
-                        // Força circular
-                        p.px += (-dy / dist) * force;
-                        p.py += (dx / dist) * force;
-                        p.px -= (dx / dist) * force * 0.5; // Força centrípeta
-                        p.py -= (dy / dist) * force * 0.5;
+                    if (dist < 80) {
+                        const force = MOUSE_POWER * 0.7;
+                        p.px -= (mouse.x - mouse.px) * force;
+                        p.py -= (mouse.y - mouse.py) * force;
                     }
                 });
                 
-                vortex.life--;
-                if (vortex.life <= 0) {
-                    clearInterval(vortexInterval);
+                // Efeito visual
+                if (Math.random() < 0.2) {
+                    particles.push(new Particle(
+                        duplicateMouse.x, duplicateMouse.y,
+                        (Math.random() - 0.5) * 2,
+                        (Math.random() - 0.5) * 2,
+                        '#ff55ff',
+                        2 + Math.random() * 3,
+                        20 + Math.random() * 20
+                    ));
+                }
+                
+                duplicateMouse.life--;
+                if (duplicateMouse.life <= 0) {
+                    clearInterval(duplicateInterval);
                 }
             }, 16);
         }
         
-        // Implemente as outras funções de habilidade aqui...
-
         // ==============================================
-        // 5. SISTEMA DE SALVAMENTO
+        // ATUALIZAÇÃO DO PONTO PARA SUPORTAR SOPRADOR
         // ==============================================
-        function saveGame() {
-            const saveData = {
-                playerData: playerData,
-                abilities: specialAbilities,
-                version: '1.0'
-            };
-            localStorage.setItem('clothSimSave', JSON.stringify(saveData));
-        }
-        
-        function loadGame() {
-            const saveData = localStorage.getItem('clothSimSave');
-            if (saveData) {
-                try {
-                    const parsed = JSON.parse(saveData);
-                    if (parsed.version === '1.0') {
-                        playerData = parsed.playerData;
-                        // Carregar habilidades (cuidado com referências)
-                        Object.keys(parsed.abilities).forEach(toolId => {
-                            Object.keys(parsed.abilities[toolId]).forEach(abilityId => {
-                                if (specialAbilities[toolId] && specialAbilities[toolId][abilityId]) {
-                                    specialAbilities[toolId][abilityId].level = parsed.abilities[toolId][abilityId].level || 0;
-                                }
-                            });
-                        });
-                        
-                        // Reconstruir habilidades ativas
-                        Object.keys(specialAbilities).forEach(toolId => {
-                            Object.keys(specialAbilities[toolId]).forEach(abilityId => {
-                                const ability = specialAbilities[toolId][abilityId];
-                                if (ability.level > 0 && (ability.type === 'active' || ability.type === 'modal')) {
-                                    if (!activeAbilities[toolId].includes(abilityId)) {
-                                        activeAbilities[toolId].push(abilityId);
-                                    }
-                                }
-                            });
-                        });
-                        
-                        updatePlayerDisplay();
-                        calculateBaseAttributes();
-                    }
-                } catch (e) {
-                    console.error('Erro ao carregar jogo:', e);
-                }
-            }
-        }
-        
-        // ==============================================
-        // CÓDIGO DA SIMULAÇÃO ORIGINAL (ATUALIZADO)
-        // ==============================================
-        
-        // Classes e funções originais (atualizadas para usar o sistema de upgrades)
         class Point {
             constructor(x, y, pinned = false) {
                 this.x = x;
@@ -1611,6 +1986,8 @@
                 this.maxBurnTime = 200;
                 this.frozen = false;
                 this.freezeTime = 0;
+                this.slowed = false; // Para efeito de gosma
+                this.slowTime = 0;
             }
 
             update() {
@@ -1623,7 +2000,17 @@
                     return; // Pontos congelados não se movem
                 }
 
-                // Efeito do fogo (original)
+                // Efeito da gosma (reduz velocidade)
+                let currentFriction = config.friction;
+                if (this.slowed) {
+                    currentFriction *= 0.8; // 20% mais lento
+                    this.slowTime--;
+                    if (this.slowTime <= 0) {
+                        this.slowed = false;
+                    }
+                }
+
+                // Efeito do fogo
                 if (this.isBurning) {
                     this.burnTime++;
                     
@@ -1705,14 +2092,24 @@
                         let projection = pointToBlowX * blowX + pointToBlowY * blowY;
                         let blowDist = Math.sqrt(pointToBlowX * pointToBlowX + pointToBlowY * pointToBlowY);
                         
-                        if (projection > 0 && blowDist < blowerRange) {
-                            let force = blowForce * (1 - blowDist / blowerRange) * blowerForceMultiplier;
-                            this.px -= blowX * force;
-                            this.py -= blowY * force;
-                            
-                            // Ganhar XP por sopro
-                            if (Math.random() < 0.05) {
-                                gainXP(1);
+                        if (blowerMode === 'blow') {
+                            // Modo sopro normal
+                            if (projection > 0 && blowDist < blowerRange) {
+                                let force = blowForce * (1 - blowDist / blowerRange) * blowerForceMultiplier;
+                                this.px -= blowX * force;
+                                this.py -= blowY * force;
+                                
+                                // Ganhar XP por sopro
+                                if (Math.random() < 0.05) {
+                                    gainXP(1);
+                                }
+                            }
+                        } else {
+                            // Modo sucção (puxa para o centro)
+                            if (blowDist < blowerRange) {
+                                let force = blowForce * (1 - blowDist / blowerRange) * blowerForceMultiplier * 0.5;
+                                this.px += (mouse.x - this.x) / blowDist * force;
+                                this.py += (mouse.y - this.y) / blowDist * force;
                             }
                         }
                     } else if (activeTool === 'flame' && flameActive) {
@@ -1742,9 +2139,9 @@
                     }
                 }
 
-                // Integração de Verlet
-                let vx = (this.x - this.px) * config.friction;
-                let vy = (this.y - this.py) * config.friction;
+                // Integração de Verlet com fricção ajustada
+                let vx = (this.x - this.px) * currentFriction;
+                let vy = (this.y - this.py) * currentFriction;
 
                 this.px = this.x;
                 this.py = this.y;
@@ -1769,6 +2166,11 @@
                 this.frozen = true;
                 this.freezeTime = duration;
             }
+            
+            slow(duration = 150) {
+                this.slowed = true;
+                this.slowTime = duration;
+            }
 
             draw() {
                 if (this.frozen) {
@@ -1783,6 +2185,20 @@
                     ctx.lineWidth = 1;
                     ctx.beginPath();
                     ctx.arc(this.x, this.y, 6, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                } else if (this.slowed) {
+                    // Desenhar ponto com gosma
+                    ctx.save();
+                    ctx.fillStyle = '#00aa00';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = '#00ff00';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
                     ctx.stroke();
                     ctx.restore();
                 } else if (this.isBurning) {
@@ -1843,7 +2259,9 @@
             }
         }
 
-        // Classe Cannonball atualizada com efeitos de upgrades
+        // ==============================================
+        // ATUALIZAÇÃO DO CANHÃO PARA SUPORTAR HABILIDADES
+        // ==============================================
         class Cannonball {
             constructor(x, y, vx, vy) {
                 this.x = x;
@@ -1858,9 +2276,30 @@
                 this.maxBounces = specialAbilities.cannon.ricochet?.level || 0;
                 this.willExplode = Math.random() < (specialAbilities.cannon.explosion?.level * 0.3 || 0);
                 this.willFragment = Math.random() < (specialAbilities.cannon.fragmentation?.level * 0.2 || 0);
+                this.guided = false;
+                this.guideTime = 0;
+                this.guideTarget = { x: mouse.x, y: mouse.y };
             }
             
             update() {
+                // Atualizar guiamento
+                if (this.guided && this.guideTime > 0) {
+                    this.guideTarget.x = mouse.x;
+                    this.guideTarget.y = mouse.y;
+                    
+                    const dx = this.guideTarget.x - this.x;
+                    const dy = this.guideTarget.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist > 0) {
+                        const guideStrength = 0.05;
+                        this.vx += (dx / dist) * guideStrength;
+                        this.vy += (dy / dist) * guideStrength;
+                    }
+                    
+                    this.guideTime--;
+                }
+                
                 this.x += this.vx;
                 this.y += this.vy;
                 this.vy += config.gravity * 0.1;
@@ -1871,23 +2310,27 @@
                 // Ricochete nas bordas
                 if (this.maxBounces > 0 && this.bounces < this.maxBounces) {
                     if (this.x < this.radius && this.vx < 0) {
-                        this.vx = -this.vx;
+                        this.vx = -this.vx * 0.9;
                         this.bounces++;
                         this.x = this.radius;
+                        createRicochetEffect(this.x, this.y, Math.PI);
                     } else if (this.x > width - this.radius && this.vx > 0) {
-                        this.vx = -this.vx;
+                        this.vx = -this.vx * 0.9;
                         this.bounces++;
                         this.x = width - this.radius;
+                        createRicochetEffect(this.x, this.y, 0);
                     }
                     
                     if (this.y < this.radius && this.vy < 0) {
-                        this.vy = -this.vy;
+                        this.vy = -this.vy * 0.9;
                         this.bounces++;
                         this.y = this.radius;
+                        createRicochetEffect(this.x, this.y, Math.PI/2);
                     } else if (this.y > height - this.radius && this.vy > 0) {
-                        this.vy = -this.vy;
+                        this.vy = -this.vy * 0.9;
                         this.bounces++;
                         this.y = height - this.radius;
+                        createRicochetEffect(this.x, this.y, -Math.PI/2);
                     }
                 }
                 
@@ -1912,7 +2355,7 @@
                                 
                                 // Explosão ao contato
                                 if (this.willExplode) {
-                                    createExplosion(this.x, this.y);
+                                    createExplosion(this.x, this.y, 1.0);
                                     this.active = false;
                                 }
                                 
@@ -1936,6 +2379,7 @@
                                     let dot = this.vx * nx + this.vy * ny;
                                     this.vx = this.vx - 2 * dot * nx * 0.7;
                                     this.vy = this.vy - 2 * dot * ny * 0.7;
+                                    createRicochetEffect(this.x, this.y, Math.atan2(ny, nx));
                                 }
                             }
                         }
@@ -1946,15 +2390,15 @@
             draw() {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = this.willExplode ? '#ff8800' : '#ff5555';
+                ctx.fillStyle = this.guided ? '#ffaa00' : (this.willExplode ? '#ff8800' : '#ff5555');
                 ctx.fill();
-                ctx.strokeStyle = this.willExplode ? '#ffaa00' : '#ff0000';
+                ctx.strokeStyle = this.guided ? '#ffff00' : (this.willExplode ? '#ffaa00' : '#ff0000');
                 ctx.lineWidth = 3;
                 ctx.stroke();
                 
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.radius * 0.7, 0, Math.PI * 2);
-                ctx.fillStyle = this.willExplode ? '#ffbb55' : '#ff8888';
+                ctx.fillStyle = this.guided ? '#ffff55' : (this.willExplode ? '#ffbb55' : '#ff8888');
                 ctx.fill();
                 
                 // Indicador de ricochete
@@ -1963,183 +2407,44 @@
                     ctx.font = '10px Arial';
                     ctx.fillText(`↻${this.maxBounces - this.bounces}`, this.x - 5, this.y - 12);
                 }
+                
+                // Indicador de guiamento
+                if (this.guided && this.guideTime > 0) {
+                    ctx.save();
+                    ctx.strokeStyle = '#ffff00';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.guideTarget.x, this.guideTarget.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.restore();
+                }
             }
         }
-
-        // Funções auxiliares para habilidades
-        function freezeArea(x, y) {
-            points.forEach(p => {
-                const dx = p.x - x;
-                const dy = p.y - y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                
-                if (dist < 80) {
-                    p.freeze(150);
-                    
-                    // Efeito visual de congelamento
-                    for (let i = 0; i < 10; i++) {
-                        particles.push(new Particle(
-                            x + (Math.random() - 0.5) * 50,
-                            y + (Math.random() - 0.5) * 50,
-                            (Math.random() - 0.5) * 2,
-                            (Math.random() - 0.5) * 2,
-                            '#55aaff',
-                            2 + Math.random() * 3,
-                            30 + Math.random() * 30
-                        ));
-                    }
-                }
-            });
-        }
         
-        function createSparks(x, y) {
-            for (let i = 0; i < 30; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 3 + Math.random() * 4;
-                fireParticles.push(new FireParticle(
+        function createRicochetEffect(x, y, angle) {
+            for (let i = 0; i < 10; i++) {
+                const sparkAngle = angle + (Math.random() - 0.5) * Math.PI/2;
+                const speed = 1 + Math.random() * 3;
+                particles.push(new Particle(
                     x, y,
-                    Math.cos(angle) * speed,
-                    Math.sin(angle) * speed,
-                    0.7 + Math.random() * 0.3
-                ));
-            }
-        }
-        
-        function createFireRing(x, y) {
-            const ringRadius = 60;
-            const numPoints = 16;
-            
-            for (let i = 0; i < numPoints; i++) {
-                const angle = (i / numPoints) * Math.PI * 2;
-                const px = x + Math.cos(angle) * ringRadius;
-                const py = y + Math.sin(angle) * ringRadius;
-                
-                // Encontrar ponto mais próximo para incendiar
-                let closestPoint = null;
-                let closestDist = Infinity;
-                
-                points.forEach(p => {
-                    if (p.pinned) return;
-                    const dx = p.x - px;
-                    const dy = p.y - py;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < 20 && dist < closestDist) {
-                        closestDist = dist;
-                        closestPoint = p;
-                    }
-                });
-                
-                if (closestPoint) {
-                    closestPoint.ignite(1.0);
-                }
-                
-                // Efeito visual
-                fireParticles.push(new FireParticle(
-                    px, py,
-                    Math.cos(angle + Math.PI) * 0.5,
-                    Math.sin(angle + Math.PI) * 0.5,
-                    0.8
-                ));
-            }
-        }
-        
-        function createWeb(x, y) {
-            // Criar conexões temporárias entre pontos próximos
-            const nearbyPoints = points.filter(p => {
-                if (p.pinned) return false;
-                const dx = p.x - x;
-                const dy = p.y - y;
-                return Math.sqrt(dx * dx + dy * dy) < 100;
-            });
-            
-            // Conectar pontos aleatoriamente
-            for (let i = 0; i < nearbyPoints.length; i++) {
-                for (let j = i + 1; j < Math.min(i + 4, nearbyPoints.length); j++) {
-                    if (Math.random() < 0.3) {
-                        const tempSpring = new Spring(nearbyPoints[i], nearbyPoints[j]);
-                        tempSpring.active = true;
-                        tempSpring.length = 30;
-                        tempSpring.isTemporary = true;
-                        tempSpring.life = 300;
-                        
-                        springs.push(tempSpring);
-                        
-                        // Remover após tempo
-                        setTimeout(() => {
-                            const index = springs.indexOf(tempSpring);
-                            if (index > -1) {
-                                springs.splice(index, 1);
-                            }
-                        }, 300);
-                    }
-                }
-            }
-            
-            // Efeito visual
-            for (let i = 0; i < 20; i++) {
-                particles.push(new Particle(
-                    x + (Math.random() - 0.5) * 50,
-                    y + (Math.random() - 0.5) * 50,
-                    (Math.random() - 0.5) * 2,
-                    (Math.random() - 0.5) * 2,
-                    '#ffffff',
-                    1 + Math.random() * 2,
-                    50 + Math.random() * 50
-                ));
-            }
-        }
-        
-        function createForceField(x, y) {
-            // Criar campo de força que repele pontos
-            const field = {
-                x, y, radius: 100, strength: 5, life: 200
-            };
-            
-            const fieldInterval = setInterval(() => {
-                points.forEach(p => {
-                    if (p.pinned) return;
-                    const dx = p.x - field.x;
-                    const dy = p.y - field.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (dist < field.radius && dist > 0) {
-                        const force = (1 - dist / field.radius) * field.strength * 0.1;
-                        p.px += (dx / dist) * force;
-                        p.py += (dy / dist) * force;
-                    }
-                });
-                
-                field.life--;
-                if (field.life <= 0) {
-                    clearInterval(fieldInterval);
-                }
-            }, 16);
-            
-            // Efeito visual
-            for (let i = 0; i < 30; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const dist = Math.random() * field.radius;
-                particles.push(new Particle(
-                    x + Math.cos(angle) * dist,
-                    y + Math.sin(angle) * dist,
-                    Math.cos(angle + Math.PI) * 0.5,
-                    Math.sin(angle + Math.PI) * 0.5,
-                    '#55aaff',
-                    1 + Math.random() * 2,
-                    30 + Math.random() * 30
+                    Math.cos(sparkAngle) * speed,
+                    Math.sin(sparkAngle) * speed,
+                    '#ffff00',
+                    2 + Math.random() * 2,
+                    20 + Math.random() * 20
                 ));
             }
         }
 
         // ==============================================
-        // FUNÇÕES RESTANTES DA SIMULAÇÃO (ORIGINAIS)
+        // FUNÇÕES RESTANTES DA SIMULAÇÃO
         // ==============================================
         
-        // [As classes Spring, FireParticle, Dart, Particle e funções restantes 
-        // permanecem como no código original, apenas atualizadas para usar
-        // o sistema de upgrades onde apropriado]
+        // [As classes Spring, FireParticle, Dart, Particle permanecem como antes]
         
-        // Classes restantes (mantidas do original com pequenas atualizações)
         class Spring {
             constructor(p1, p2) {
                 this.p1 = p1;
@@ -2346,7 +2651,6 @@
             }
         }
 
-        // [As classes Dart e Particle permanecem exatamente como no original]
         class Dart {
             constructor(x, y, vx, vy, targetX, targetY) {
                 this.x = x;
@@ -2582,7 +2886,10 @@
             }
         }
 
-        // Funções da interface original (atualizadas)
+        // ==============================================
+        // FUNÇÕES RESTANTES (interface, salvamento, etc.)
+        // ==============================================
+        
         function updateDartCounter() {
             dartCounter.textContent = `Dardos Fixos: ${pinnedByDarts.size}`;
         }
@@ -2687,26 +2994,52 @@
             let force = blowForce;
             let radius = 40 + force * 30;
             
+            // Cor diferente para modo sucção
+            const color = blowerMode === 'suction' ? '#ff5555' : '#55aaff';
+            const symbol = blowerMode === 'suction' ? '👇' : '💨';
+            
             ctx.save();
             ctx.globalAlpha = 0.4;
-            ctx.fillStyle = '#55aaff';
+            ctx.fillStyle = color;
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
             ctx.fill();
             
-            ctx.globalAlpha = 0.9;
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(centerX, centerY);
-            let arrowX = centerX + Math.cos(angle) * (radius + 30);
-            let arrowY = centerY + Math.sin(angle) * (radius + 30);
-            ctx.lineTo(arrowX, arrowY);
+            // Símbolo do modo
+            ctx.font = '20px Arial';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(symbol, centerX, centerY);
             
-            ctx.lineTo(arrowX - Math.cos(angle - 0.3) * 15, arrowY - Math.sin(angle - 0.3) * 15);
-            ctx.moveTo(arrowX, arrowY);
-            ctx.lineTo(arrowX - Math.cos(angle + 0.3) * 15, arrowY - Math.sin(angle + 0.3) * 15);
-            ctx.stroke();
+            if (blowerMode === 'blow') {
+                ctx.globalAlpha = 0.9;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                let arrowX = centerX + Math.cos(angle) * (radius + 30);
+                let arrowY = centerY + Math.sin(angle) * (radius + 30);
+                ctx.lineTo(arrowX, arrowY);
+                
+                ctx.lineTo(arrowX - Math.cos(angle - 0.3) * 15, arrowY - Math.sin(angle - 0.3) * 15);
+                ctx.moveTo(arrowX, arrowY);
+                ctx.lineTo(arrowX - Math.cos(angle + 0.3) * 15, arrowY - Math.sin(angle + 0.3) * 15);
+                ctx.stroke();
+            } else {
+                // Seta apontando para dentro no modo sucção
+                ctx.globalAlpha = 0.9;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(centerX + Math.cos(angle) * radius, centerY + Math.sin(angle) * radius);
+                ctx.lineTo(centerX, centerY);
+                
+                ctx.lineTo(centerX - Math.cos(angle - 0.3) * 15, centerY - Math.sin(angle - 0.3) * 15);
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(centerX - Math.cos(angle + 0.3) * 15, centerY - Math.sin(angle + 0.3) * 15);
+                ctx.stroke();
+            }
             
             ctx.restore();
             
@@ -2718,9 +3051,9 @@
                 
                 particles.push(new Particle(
                     px, py,
-                    Math.cos(pAngle) * force * 5 + (Math.random() - 0.5) * 2,
-                    Math.sin(pAngle) * force * 5 + (Math.random() - 0.5) * 2,
-                    '#ffffff',
+                    Math.cos(pAngle) * force * (blowerMode === 'suction' ? -3 : 5) + (Math.random() - 0.5) * 2,
+                    Math.sin(pAngle) * force * (blowerMode === 'suction' ? -3 : 5) + (Math.random() - 0.5) * 2,
+                    color,
                     3 + Math.random() * 4,
                     40 + Math.random() * 40
                 ));
@@ -2808,6 +3141,12 @@
             }
         }
         
+        // [As funções createToolbar, setActiveTool, clearAllDarts, createConfigControls,
+        // createUpgradeModal, showToolUpgrades, canUpgrade, getUpgradeCost, upgradeTool,
+        // calculateBaseAttributes, createSpecialModal, showToolAbilities, upgradeAbility,
+        // saveGame, loadGame permanecem como antes]
+        
+        // Implementação das funções de interface (mantidas do código anterior)
         function createToolbar() {
             toolbar.innerHTML = '';
             const toolKeys = Object.keys(tools);
@@ -2876,10 +3215,6 @@
             points.forEach(p => p.unpinByDart());
             updateDartCounter();
         }
-        
-        // ==============================================
-        // INICIALIZAÇÃO E EVENT LISTENERS
-        // ==============================================
         
         function createConfigControls() {
             configControls.innerHTML = '';
@@ -2959,6 +3294,276 @@
                 colorValueSpan.textContent = config.lineColor;
             });
         }
+        
+        // Funções do sistema de upgrades (mantidas do código anterior)
+        function createUpgradeModal() {
+            const upgradeTabs = document.getElementById('upgradeTabs');
+            const upgradeContent = document.getElementById('upgradeContent');
+            
+            upgradeTabs.innerHTML = '';
+            upgradeContent.innerHTML = '';
+            
+            Object.keys(tools).forEach(toolId => {
+                const tool = tools[toolId];
+                const tab = document.createElement('div');
+                tab.className = 'tab';
+                tab.textContent = `${tool.icon} ${tool.name}`;
+                tab.dataset.tool = toolId;
+                
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    showToolUpgrades(toolId);
+                });
+                
+                upgradeTabs.appendChild(tab);
+            });
+            
+            const firstTab = upgradeTabs.querySelector('.tab');
+            if (firstTab) {
+                firstTab.classList.add('active');
+                showToolUpgrades(firstTab.dataset.tool);
+            }
+        }
+        
+        function showToolUpgrades(toolId) {
+            const upgradeContent = document.getElementById('upgradeContent');
+            const toolData = playerData.tools[toolId];
+            
+            upgradeContent.innerHTML = `
+                <div class="upgrade-section">
+                    <h3>${tools[toolId].name} - Nível ${toolData.level}</h3>
+                    <div class="upgrade-grid">
+                        <div class="upgrade-card ${canUpgrade(toolId, 'force') ? 'upgradable' : ''}" 
+                             onclick="${canUpgrade(toolId, 'force') ? `upgradeTool('${toolId}', 'force')` : ''}">
+                            <div class="upgrade-header">
+                                <div class="upgrade-name">Força</div>
+                                <div class="upgrade-level">Nv. ${toolData.force}</div>
+                            </div>
+                            <div class="upgrade-stats">
+                                Aumenta a intensidade do efeito
+                            </div>
+                            <div class="upgrade-cost">
+                                <span>Custo:</span>
+                                <span class="cost-value">${getUpgradeCost(toolData.force)}⭐</span>
+                            </div>
+                        </div>
+                        
+                        <div class="upgrade-card ${canUpgrade(toolId, 'range') ? 'upgradable' : ''}" 
+                             onclick="${canUpgrade(toolId, 'range') ? `upgradeTool('${toolId}', 'range')` : ''}">
+                            <div class="upgrade-header">
+                                <div class="upgrade-name">Alcance</div>
+                                <div class="upgrade-level">Nv. ${toolData.range}</div>
+                            </div>
+                            <div class="upgrade-stats">
+                                Aumenta a área de influência
+                            </div>
+                            <div class="upgrade-cost">
+                                <span>Custo:</span>
+                                <span class="cost-value">${getUpgradeCost(toolData.range)}⭐</span>
+                            </div>
+                        </div>
+                        
+                        <div class="upgrade-card ${canUpgrade(toolId, 'efficiency') ? 'upgradable' : ''}" 
+                             onclick="${canUpgrade(toolId, 'efficiency') ? `upgradeTool('${toolId}', 'efficiency')` : ''}">
+                            <div class="upgrade-header">
+                                <div class="upgrade-name">Eficiência</div>
+                                <div class="upgrade-level">Nv. ${toolData.efficiency}</div>
+                            </div>
+                            <div class="upgrade-stats">
+                                Reduz custo em recursos/cooldown
+                            </div>
+                            <div class="upgrade-cost">
+                                <span>Custo:</span>
+                                <span class="cost-value">${getUpgradeCost(toolData.efficiency)}⭐</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            calculateBaseAttributes();
+        }
+        
+        function canUpgrade(toolId, attribute) {
+            const cost = getUpgradeCost(playerData.tools[toolId][attribute]);
+            return playerData.upgradePoints >= cost && playerData.tools[toolId][attribute] < 10;
+        }
+        
+        function getUpgradeCost(currentLevel) {
+            return Math.floor(10 * Math.pow(1.5, currentLevel));
+        }
+        
+        function upgradeTool(toolId, attribute) {
+            if (!canUpgrade(toolId, attribute)) return;
+            
+            const cost = getUpgradeCost(playerData.tools[toolId][attribute]);
+            playerData.upgradePoints -= cost;
+            playerData.tools[toolId][attribute]++;
+            
+            const tool = playerData.tools[toolId];
+            const avgLevel = (tool.force + tool.range + tool.efficiency) / 3;
+            tool.level = Math.floor(avgLevel);
+            
+            gainXP(cost);
+            
+            calculateBaseAttributes();
+            
+            updatePlayerDisplay();
+            showToolUpgrades(toolId);
+            saveGame();
+        }
+        
+        function calculateBaseAttributes() {
+            const cannonLvl = playerData.tools.cannon.level;
+            const dartLvl = playerData.tools.dart.level;
+            const blowerLvl = playerData.tools.blower.level;
+            const flameLvl = playerData.tools.flame.level;
+            const mouseLvl = playerData.tools.mouse.level;
+            
+            CANNON_POWER = 25 * (1 + cannonLvl * 0.2);
+            DART_POWER = 22 * (1 + dartLvl * 0.2);
+            BLOWER_POWER = 0.2 * (1 + blowerLvl * 0.3);
+            FLAME_POWER = 0.3 * (1 + flameLvl * 0.25);
+            MOUSE_POWER = 0.5 * (1 + mouseLvl * 0.2);
+        }
+        
+        function createSpecialModal() {
+            const specialTabs = document.getElementById('specialTabs');
+            const specialContent = document.getElementById('specialContent');
+            
+            specialTabs.innerHTML = '';
+            specialContent.innerHTML = '';
+            
+            Object.keys(tools).forEach(toolId => {
+                const tool = tools[toolId];
+                const tab = document.createElement('div');
+                tab.className = 'tab';
+                tab.textContent = `${tool.icon} ${tool.name}`;
+                tab.dataset.tool = toolId;
+                
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    showToolAbilities(toolId);
+                });
+                
+                specialTabs.appendChild(tab);
+            });
+            
+            const firstTab = specialTabs.querySelector('.tab');
+            if (firstTab) {
+                firstTab.classList.add('active');
+                showToolAbilities(firstTab.dataset.tool);
+            }
+        }
+        
+        function showToolAbilities(toolId) {
+            const specialContent = document.getElementById('specialContent');
+            const abilities = specialAbilities[toolId];
+            
+            let html = `<div class="upgrade-section"><h3>${tools[toolId].name} - Habilidades Especiais</h3><div class="upgrade-grid">`;
+            
+            Object.keys(abilities).forEach(abilityId => {
+                const ability = abilities[abilityId];
+                const currentLevel = ability.level || 0;
+                const canUpgrade = currentLevel < ability.maxLevel && playerData.upgradePoints >= ability.cost[currentLevel];
+                
+                html += `
+                    <div class="upgrade-card ${canUpgrade ? 'upgradable' : ''} ${currentLevel >= ability.maxLevel ? 'locked' : ''}" 
+                         onclick="${canUpgrade ? `upgradeAbility('${toolId}', '${abilityId}')` : ''}">
+                        <div class="upgrade-header">
+                            <div class="upgrade-name">${ability.name}</div>
+                            <div class="upgrade-level">Nv. ${currentLevel}/${ability.maxLevel}</div>
+                        </div>
+                        <div class="upgrade-stats">
+                            ${ability.desc}<br>
+                            <small>Tipo: ${ability.type === 'passive' ? 'Passiva' : ability.type === 'modal' ? 'Modal' : 'Ativa'}</small>
+                            ${ability.hotkey ? `<br><small>Tecla: ${ability.hotkey}</small>` : ''}
+                        </div>
+                        <div class="upgrade-cost">
+                            <span>Custo:</span>
+                            <span class="cost-value">${currentLevel < ability.maxLevel ? ability.cost[currentLevel] : 'MAX'}⭐</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `</div></div>`;
+            specialContent.innerHTML = html;
+        }
+        
+        function upgradeAbility(toolId, abilityId) {
+            const ability = specialAbilities[toolId][abilityId];
+            const currentLevel = ability.level || 0;
+            
+            if (currentLevel >= ability.maxLevel) return;
+            if (playerData.upgradePoints < ability.cost[currentLevel]) return;
+            
+            playerData.upgradePoints -= ability.cost[currentLevel];
+            ability.level = currentLevel + 1;
+            
+            if (ability.type === 'active' || ability.type === 'modal') {
+                if (!activeAbilities[toolId].includes(abilityId)) {
+                    activeAbilities[toolId].push(abilityId);
+                    updateAbilitiesBar();
+                }
+            }
+            
+            gainXP(ability.cost[currentLevel]);
+            
+            updatePlayerDisplay();
+            showToolAbilities(toolId);
+            saveGame();
+        }
+        
+        function saveGame() {
+            const saveData = {
+                playerData: playerData,
+                abilities: specialAbilities,
+                version: '1.0'
+            };
+            localStorage.setItem('clothSimSave', JSON.stringify(saveData));
+        }
+        
+        function loadGame() {
+            const saveData = localStorage.getItem('clothSimSave');
+            if (saveData) {
+                try {
+                    const parsed = JSON.parse(saveData);
+                    if (parsed.version === '1.0') {
+                        playerData = parsed.playerData;
+                        Object.keys(parsed.abilities).forEach(toolId => {
+                            Object.keys(parsed.abilities[toolId]).forEach(abilityId => {
+                                if (specialAbilities[toolId] && specialAbilities[toolId][abilityId]) {
+                                    specialAbilities[toolId][abilityId].level = parsed.abilities[toolId][abilityId].level || 0;
+                                }
+                            });
+                        });
+                        
+                        Object.keys(specialAbilities).forEach(toolId => {
+                            Object.keys(specialAbilities[toolId]).forEach(abilityId => {
+                                const ability = specialAbilities[toolId][abilityId];
+                                if (ability.level > 0 && (ability.type === 'active' || ability.type === 'modal')) {
+                                    if (!activeAbilities[toolId].includes(abilityId)) {
+                                        activeAbilities[toolId].push(abilityId);
+                                    }
+                                }
+                            });
+                        });
+                        
+                        updatePlayerDisplay();
+                        calculateBaseAttributes();
+                    }
+                } catch (e) {
+                    console.error('Erro ao carregar jogo:', e);
+                }
+            }
+        }
+        
+        // ==============================================
+        // EVENT LISTENERS ATUALIZADOS
+        // ==============================================
         
         // Event Listeners para modais
         configBtn.addEventListener('click', function(e) {
@@ -3041,7 +3646,7 @@
             init();
         });
         
-        // Event Listeners para mouse e teclado
+        // Event Listeners para mouse
         window.addEventListener('mousedown', e => { 
             lastMouseDownTime = Date.now();
             
@@ -3066,7 +3671,7 @@
                 const shots = rapidfireLevel > 0 ? 3 + rapidfireLevel : 1;
                 
                 for (let i = 0; i < shots; i++) {
-                    const spread = rapidfireLevel > 0 ? (i - (shots-1)/2) * 0.2 : 0;
+                    const spread = shots > 1 ? (i - (shots-1)/2) * 0.2 : 0;
                     cannonballs.push(new Cannonball(
                         width / 2 + Math.cos(angle + spread) * 20, 
                         height - 50, 
@@ -3087,7 +3692,6 @@
                     ));
                 }
                 
-                // Ganhar XP por disparar canhão
                 gainXP(5);
                 
             } else if (activeTool === 'dart' && e.button === 0) {
@@ -3166,7 +3770,7 @@
         
         window.addEventListener('resize', init);
         
-        // Atalhos de teclado
+        // Atalhos de teclado ATUALIZADOS
         window.addEventListener('keydown', function(e) {
             // Ignorar se estiver em modal
             if (isConfigModalOpen || isUpgradeModalOpen || isSpecialModalOpen) {
@@ -3186,15 +3790,13 @@
             if (key === 'R') clearAllDarts();
             if (key === 'F') extinguishAllFire();
             
-            // Atalhos para habilidades (Q, E, R, T, Y)
-            if (key === 'Q' && activeAbilities[activeTool].length > 0) {
-                activateAbility(activeAbilities[activeTool][0]);
-            }
-            if (key === 'E' && activeAbilities[activeTool].length > 1) {
-                activateAbility(activeAbilities[activeTool][1]);
-            }
-            if (key === 'R' && activeAbilities[activeTool].length > 2) {
-                activateAbility(activeAbilities[activeTool][2]);
+            // Atalhos para habilidades (Q, E, R, T)
+            const abilities = activeAbilities[activeTool];
+            const hotkeyMap = { 'Q': 0, 'E': 1, 'R': 2, 'T': 3, 'Y': 4 };
+            
+            if (hotkeyMap[key] !== undefined && abilities[hotkeyMap[key]]) {
+                const abilityId = abilities[hotkeyMap[key]];
+                activateAbility(abilityId);
             }
             
             // Modais
@@ -3292,29 +3894,24 @@
         // INICIALIZAÇÃO FINAL
         // ==============================================
         
-        // Carregar jogo salvo
         loadGame();
         
-        // Inicializar interface
         createConfigControls();
         createToolbar();
         updatePlayerDisplay();
         updateAbilitiesBar();
         
-        // Calcular atributos base
         calculateBaseAttributes();
         
-        // Iniciar simulação
         init();
         animate();
         
-        // Focar no canvas
         canvas.focus();
         
-        // Mensagem de boas-vindas
         console.log('Sistema de Upgrades carregado!');
         console.log('Use ⚡ para upgrades gerais');
         console.log('Use ★ para habilidades especiais');
+        console.log('Use Q, E, R, T para ativar habilidades');
         console.log('Ganhe XP interagindo com o tecido!');
     </script>
 </body>
