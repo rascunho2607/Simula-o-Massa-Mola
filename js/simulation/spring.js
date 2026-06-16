@@ -337,8 +337,10 @@ export function createSpringClass(game) {
         
         ignite(intensity = 1.0) {
             if (game.getMaterial(this).fireResistance >= 999) return;
+            const wasBurning = this.isBurning === true;
             this.isBurning = true;
             this.burnIntensity = intensity;
+            if (!wasBurning) game.markPhysicsActive?.('spring-fire-started');
             game.markSpringLineTopologyDirtyIfVisualStateChanged?.(this, 'spring-ignited');
         }
         

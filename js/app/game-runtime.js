@@ -164,6 +164,7 @@ export function bootGame() {
         let damageParticleBudget = 0;
         let frameCount = 0;
         let physicsAdaptiveEventFrame = -Infinity;
+        let physicsAdaptiveEventReason = 'init';
         let backgroundInitialized = false;
         let targetHud = null;
         let coveredTarget = {
@@ -453,6 +454,7 @@ export function bootGame() {
 
         function markPhysicsActive(reason = 'event') {
             physicsAdaptiveEventFrame = frameCount;
+            physicsAdaptiveEventReason = reason;
         }
 
         function createImpactRing(x, y, radius, color = '#ffcc55') {
@@ -820,6 +822,7 @@ export function bootGame() {
                     applyDamageToPoint,
                     applyDamageToSpring,
                     addBackgroundDecal,
+                    markPhysicsActive,
                     markSpringLineTopologyDirtyIfVisualStateChanged,
                     get activeTool() { return activeTool; },
                     get frameCount() { return frameCount; },
@@ -1139,6 +1142,7 @@ export function bootGame() {
             isPointAlive,
             applyDamageToPoint,
             applyDamageToSpring,
+            markPhysicsActive,
             getMaterial,
             materialDamageColor,
             updateDartCounter,
@@ -1207,6 +1211,7 @@ export function bootGame() {
             isSpringAlive,
             applyDamageToSpring,
             breakSpring,
+            markPhysicsActive,
             getMaterial,
             materialDamageColor,
             createFireParticle,
@@ -1400,6 +1405,7 @@ export function bootGame() {
                     get fireParticles() { return fireParticles; },
                     get frameCount() { return frameCount; },
                     get physicsAdaptiveEventFrame() { return physicsAdaptiveEventFrame; },
+                    get physicsAdaptiveEventReason() { return physicsAdaptiveEventReason; },
                     get activeTool() { return activeTool; },
                     get blowForce() { return blowForce; },
                     get flameActive() { return flameActive; },

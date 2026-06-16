@@ -71,6 +71,32 @@ function renderClothWithGpu(game, visualState, clothRows, clothCols, options = {
     }
 }
 
+function renderActiveEffectsAboveCloth(game) {
+    game.particles.forEach(particle => particle.draw());
+    const shouldUseFireGpu = game.config.fireGpuRenderer?.enabled
+        && (isFireGpuRendererReady() || initFireGpuRenderer(game.canvas, game.config));
+    const didRenderFireGpu = shouldUseFireGpu
+        ? renderFireGpuParticles(game.fireParticles, performance.now(), game.config)
+        : false;
+    if (!didRenderFireGpu) {
+        clearFireGpuRenderer();
+        game.fireParticles.forEach(particle => particle.draw());
+    }
+    game.drawImpactRings();
+
+    game.cannonballs.forEach(ball => ball.draw());
+    game.darts.forEach(dart => dart.draw());
+
+    if (game.activeTool === 'blower' && game.blowForce > 0) {
+        game.drawBlowerEffect();
+    }
+
+    if (game.activeTool === 'flame' && game.flameActive) {
+        game.drawFlameEffect();
+    }
+    game.drawToolOverlays();
+}
+
 export function createRuntimeGameLoopController(game) {
     const perfStats = {
         frames: 0,
@@ -233,29 +259,7 @@ export function createRuntimeGameLoopController(game) {
             if (debugPerformance) meshMs = performance.now() - meshStart;
         }
 
-        game.particles.forEach(particle => particle.draw());
-        const shouldUseFireGpu = game.config.fireGpuRenderer?.enabled
-            && (isFireGpuRendererReady() || initFireGpuRenderer(game.canvas, game.config));
-        const didRenderFireGpu = shouldUseFireGpu
-            ? renderFireGpuParticles(game.fireParticles, performance.now(), game.config)
-            : false;
-        if (!didRenderFireGpu) {
-            clearFireGpuRenderer();
-            game.fireParticles.forEach(particle => particle.draw());
-        }
-        game.drawImpactRings();
-
-        game.cannonballs.forEach(ball => ball.draw());
-        game.darts.forEach(dart => dart.draw());
-
-        if (game.activeTool === 'blower' && game.blowForce > 0) {
-            game.drawBlowerEffect();
-        }
-
-        if (game.activeTool === 'flame' && game.flameActive) {
-            game.drawFlameEffect();
-        }
-        game.drawToolOverlays();
+        renderActiveEffectsAboveCloth(game);
 
         game.mouse.px = game.mouse.x;
         game.mouse.py = game.mouse.y;

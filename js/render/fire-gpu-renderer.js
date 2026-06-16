@@ -153,7 +153,7 @@ function createOverlayCanvas(canvas) {
     fireCanvas.style.left = '0';
     fireCanvas.style.top = '0';
     fireCanvas.style.pointerEvents = 'none';
-    fireCanvas.style.zIndex = '2';
+    fireCanvas.style.zIndex = '30';
     fireCanvas.style.display = 'block';
 
     const parent = canvas.parentNode || document.body;

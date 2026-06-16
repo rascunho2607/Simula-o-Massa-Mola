@@ -363,10 +363,12 @@ export function createPointClass(game) {
         
         ignite(intensity = 1.0) {
             if (game.getMaterial(this).fireResistance >= 999) return;
+            const wasBurning = this.isBurning === true;
             this.isBurning = true;
             this.burnIntensity = Math.min(intensity, 1.5);
             this.burnTime = 0;
             game.burningPoints.add(this);
+            if (!wasBurning) game.markPhysicsActive?.('point-fire-started');
         }
         
         extinguish() {

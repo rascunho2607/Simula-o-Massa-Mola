@@ -26,13 +26,24 @@ function getAdaptiveState(game) {
             iterations: OLD_FIXED_PHYSICS_ITERATIONS,
             cooldown: getAdaptiveConfig(game).activeCooldownFrames ?? 45,
             stableSamples: 0,
+            normalSamples: 0,
             lastSampleFrame: -Infinity,
+            lastEventFrame: -Infinity,
             avgVelocity: 0,
             maxVelocity: 0,
             movingPointCount: 0,
             highStressCount: 0,
+            movingRatio: 0,
+            highStressRatio: 0,
             sampledPointCount: 0,
             sampledSpringCount: 0,
+            recentDamageFrames: 0,
+            recentFireFrames: 0,
+            recentAcidFrames: 0,
+            recentElectricFrames: 0,
+            recentProjectileFrames: 0,
+            activeReasons: ['init'],
+            forceFixedReason: null,
             lastDebugFrame: 0,
             lastReason: 'init',
         };
@@ -41,11 +52,23 @@ function getAdaptiveState(game) {
 }
 
 function isToolInteractionActive(game) {
-    if (game.flameActive || game.blowForce > 0 || game.hookState?.active) return true;
+    if (game.mouse?.down && game.activeTool === 'flame' && game.flameActive) return true;
+    if (game.mouse?.down && game.activeTool === 'blower' && game.blowForce > 0) return true;
+    if (game.mouse?.down && game.activeTool === 'hook' && game.hookState?.active) return true;
     if (!game.mouse?.down) return false;
     const tool = game.activeTool || 'mouse';
-    return tool === 'mouse'
-        || tool === 'hook'
+    if (tool === 'mouse') {
+        const points = game.points || [];
+        const mouseRange = 80 * (game.playerData?.tools?.mouse?.range ?? 1);
+        const step = Math.max(1, Math.floor(points.length / 120));
+        for (let i = 0; i < points.length; i += step) {
+            const point = points[i];
+            if (!point || point.active === false || point.isDestroyed || point.pinned) continue;
+            if (Math.hypot(point.x - game.mouse.x, point.y - game.mouse.y) < mouseRange) return true;
+        }
+        return false;
+    }
+    return tool === 'hook'
         || tool === 'blower'
         || tool === 'flame'
         || tool === 'blade'
@@ -58,27 +81,82 @@ function isToolInteractionActive(game) {
         || tool === 'hammer';
 }
 
-function hasRecentDamage(game, frameIndex, maxAge) {
-    const points = game.points || [];
-    const springs = game.springs || [];
+function getEffectCooldownFrames(cfg) {
+    return cfg.effectCooldownFrames ?? 12;
+}
 
-    for (let i = 0; i < points.length; i++) {
-        const point = points[i];
-        if (!point) continue;
-        const damageAge = frameIndex - (point.lastDamageFrame ?? -Infinity);
-        if (damageAge >= 0 && damageAge <= maxAge) return true;
-        if (point.isBurning || point.isCorroding || (point.electricCharge || 0) > 0) return true;
+function getStrongCooldownFrames(cfg, reason) {
+    if (reason.includes('pierce') || reason.includes('cannon') || reason.includes('dart') || reason.includes('projectile')) {
+        return cfg.projectileCooldownFrames ?? 24;
     }
+    if (reason.includes('drag') || reason.includes('mouse')) return cfg.dragCooldownFrames ?? 12;
+    return cfg.activeCooldownFrames ?? 30;
+}
 
-    for (let i = 0; i < springs.length; i++) {
-        const spring = springs[i];
-        if (!spring) continue;
-        const damageAge = frameIndex - (spring.lastDamageFrame ?? -Infinity);
-        if (damageAge >= 0 && damageAge <= maxAge) return true;
-        if (spring.isBurning || spring.isCorroding || (spring.electricCharge || 0) > 0) return true;
+function isEffectReason(reason) {
+    return reason.includes('fire') || reason.includes('chemical') || reason.includes('acid') || reason.includes('electric');
+}
+
+function decrementRecentCounters(state, toolActive = false) {
+    const effectDecay = toolActive ? 1 : 2;
+    if (state.recentDamageFrames > 0) state.recentDamageFrames--;
+    if (state.recentFireFrames > 0) state.recentFireFrames = Math.max(0, state.recentFireFrames - effectDecay);
+    if (state.recentAcidFrames > 0) state.recentAcidFrames = Math.max(0, state.recentAcidFrames - effectDecay);
+    if (state.recentElectricFrames > 0) state.recentElectricFrames = Math.max(0, state.recentElectricFrames - effectDecay);
+    if (state.recentProjectileFrames > 0) state.recentProjectileFrames--;
+}
+
+function markRecentEvent(state, reason, cfg) {
+    const effectCooldownFrames = getEffectCooldownFrames(cfg);
+    if (reason.includes('fire')) state.recentFireFrames = effectCooldownFrames;
+    else if (reason.includes('chemical') || reason.includes('acid')) state.recentAcidFrames = effectCooldownFrames;
+    else if (reason.includes('electric')) state.recentElectricFrames = effectCooldownFrames;
+    else if (reason.includes('pierce') || reason.includes('cannon') || reason.includes('dart') || reason.includes('projectile')) {
+        const cooldownFrames = getStrongCooldownFrames(cfg, reason);
+        state.cooldown = Math.max(state.cooldown, cooldownFrames);
+        state.recentProjectileFrames = cooldownFrames;
+    } else if (reason.includes('regenerate')) {
+        const cooldownFrames = getStrongCooldownFrames(cfg, reason);
+        state.cooldown = Math.max(state.cooldown, cooldownFrames);
+        state.recentDamageFrames = cooldownFrames;
+    } else {
+        const cooldownFrames = getStrongCooldownFrames(cfg, reason);
+        state.cooldown = Math.max(state.cooldown, cooldownFrames);
+        state.recentDamageFrames = cooldownFrames;
     }
+}
 
-    return false;
+function getRecentEventReasons(state) {
+    const reasons = [];
+    if (state.recentDamageFrames > 0) reasons.push('recent-damage');
+    if (state.recentFireFrames > 0) reasons.push('recent-fire');
+    if (state.recentAcidFrames > 0) reasons.push('recent-acid');
+    if (state.recentElectricFrames > 0) reasons.push('recent-electric');
+    if (state.recentProjectileFrames > 0) reasons.push('recent-projectile');
+    return reasons;
+}
+
+function isDirectEffectApplication(game, damageType) {
+    if (damageType === 'chemical') {
+        return game.mouse?.down && game.mouse?.button === 0 && game.activeTool === 'acid';
+    }
+    if (damageType === 'fire') {
+        return game.mouse?.down && (
+            (game.activeTool === 'flame' && game.flameActive)
+            || game.activeTool === 'laser'
+            || game.activeTool === 'drill'
+        );
+    }
+    return damageType === 'electric';
+}
+
+function shouldMarkAdaptiveDamageEvent(game, damageType, effectiveDamage) {
+    if (isEffectReason(damageType)) return isDirectEffectApplication(game, damageType);
+    if (damageType === 'tension') {
+        return isToolInteractionActive(game)
+            || effectiveDamage >= (game.config?.clothDamage?.minDamageToShowEffect ?? 2);
+    }
+    return true;
 }
 
 function estimateClothActivity(game, frameIndex, previousMetrics) {
@@ -86,12 +164,13 @@ function estimateClothActivity(game, frameIndex, previousMetrics) {
     const points = game.points || [];
     const springs = game.springs || [];
     const velocityThresholdSq = (cfg.stabilityVelocityThreshold ?? 0.18) * (cfg.stabilityVelocityThreshold ?? 0.18);
+    const maxVelocityThresholdSq = (cfg.stabilityMaxVelocityThreshold ?? 1.2) * (cfg.stabilityMaxVelocityThreshold ?? 1.2);
     const motionThresholdSq = (cfg.stabilityMotionThreshold ?? 0.22) * (cfg.stabilityMotionThreshold ?? 0.22);
     const stressThreshold = cfg.highStressThreshold ?? 0.18;
     const highStressMaxSq = (1 + stressThreshold) * (1 + stressThreshold);
     const highStressMinSq = Math.max(0, (1 - stressThreshold) * (1 - stressThreshold));
-    const pointStep = Math.max(1, Math.floor(points.length / 80));
-    const springStep = Math.max(1, Math.floor(springs.length / 120));
+    const pointStep = Math.max(1, Math.floor(points.length / 160));
+    const springStep = Math.max(1, Math.floor(springs.length / 220));
     let velocitySqSum = 0;
     let maxVelocitySq = 0;
     let movingPointCount = 0;
@@ -125,14 +204,14 @@ function estimateClothActivity(game, frameIndex, previousMetrics) {
     const maxVelocity = Math.sqrt(maxVelocitySq);
     const movingRatio = sampledPointCount > 0 ? movingPointCount / sampledPointCount : 0;
     const stressRatio = sampledSpringCount > 0 ? highStressCount / sampledSpringCount : 0;
-    const activeVelocitySq = velocityThresholdSq * 9;
-    const isActive = maxVelocitySq > activeVelocitySq
-        || movingRatio > 0.28
-        || stressRatio > 0.18;
+    const isHighVelocity = maxVelocitySq > maxVelocityThresholdSq * 4
+        || velocitySqSum / Math.max(1, sampledPointCount) > velocityThresholdSq * 9;
+    const isHighStress = stressRatio > Math.max(0.24, (cfg.highStressRatioThreshold ?? 0.04) * 6);
+    const isActive = isHighVelocity || isHighStress;
     const isStable = avgVelocity <= (cfg.stabilityVelocityThreshold ?? 0.18)
-        && movingRatio <= 0.08
-        && stressRatio <= 0.04
-        && !hasRecentDamage(game, frameIndex, cfg.sampleEveryFrames ?? 6);
+        && maxVelocity <= (cfg.stabilityMaxVelocityThreshold ?? 1.2)
+        && movingRatio <= (cfg.movingPointRatioThreshold ?? 0.08)
+        && stressRatio <= (cfg.highStressRatioThreshold ?? 0.04);
 
     return {
         ...previousMetrics,
@@ -140,47 +219,78 @@ function estimateClothActivity(game, frameIndex, previousMetrics) {
         maxVelocity,
         movingPointCount,
         highStressCount,
+        movingRatio,
+        highStressRatio: stressRatio,
         sampledPointCount,
         sampledSpringCount,
         active: isActive,
         stable: isStable,
+        highVelocity: isHighVelocity,
+        highStress: isHighStress,
     };
 }
 
 export function getAdaptivePhysicsIterations(game) {
     const cfg = getAdaptiveConfig(game);
-    if (cfg.enabled === false) return OLD_FIXED_PHYSICS_ITERATIONS;
-
     const state = getAdaptiveState(game);
-    const frameIndex = game.frameCount ?? 0;
-    const eventFrame = game.physicsAdaptiveEventFrame ?? -Infinity;
-    const eventAge = frameIndex - eventFrame;
-
-    if (eventAge >= 0 && eventAge <= (cfg.activeCooldownFrames ?? 45)) {
-        state.cooldown = Math.max(state.cooldown, (cfg.activeCooldownFrames ?? 45) - eventAge);
+    if (cfg.enabled === false) {
         state.state = 'active';
-        state.iterations = clampIterations(cfg.activeIterations ?? OLD_FIXED_PHYSICS_ITERATIONS, cfg);
-        state.stableSamples = 0;
-        state.lastReason = 'event';
+        state.iterations = OLD_FIXED_PHYSICS_ITERATIONS;
+        state.forceFixedReason = 'adaptive-disabled';
+        state.activeReasons = ['adaptive-disabled'];
+        return OLD_FIXED_PHYSICS_ITERATIONS;
     }
 
-    if (isToolInteractionActive(game)) {
-        state.cooldown = Math.max(state.cooldown, cfg.activeCooldownFrames ?? 45);
+    const frameIndex = game.frameCount ?? 0;
+    const eventFrame = game.physicsAdaptiveEventFrame ?? -Infinity;
+    const activeReasons = [];
+    state.forceFixedReason = null;
+    const toolActive = isToolInteractionActive(game);
+
+    if (Number.isFinite(eventFrame) && eventFrame !== state.lastEventFrame) {
+        const reason = game.physicsAdaptiveEventReason || 'event';
+        markRecentEvent(state, reason, cfg);
+        state.lastEventFrame = eventFrame;
+        state.stableSamples = 0;
+        state.normalSamples = 0;
+        state.lastReason = reason;
+        if (reason.includes('regenerate')) activeReasons.push('regeneration-cooldown');
+    }
+
+    if (toolActive) {
+        const toolCooldownFrames = game.activeTool === 'mouse'
+            ? (cfg.dragCooldownFrames ?? 12)
+            : (isEffectReason(game.activeTool || '') ? getEffectCooldownFrames(cfg) : (cfg.postToolCooldownFrames ?? 10));
+        state.cooldown = Math.max(state.cooldown, toolCooldownFrames);
+        activeReasons.push(game.activeTool === 'mouse' ? 'mouse-dragging' : 'tool-active');
+    }
+
+    activeReasons.push(...getRecentEventReasons(state));
+    if (state.cooldown <= 0 && activeReasons.length) {
         state.state = 'active';
         state.iterations = clampIterations(cfg.activeIterations ?? OLD_FIXED_PHYSICS_ITERATIONS, cfg);
         state.stableSamples = 0;
-        state.lastReason = 'tool';
+        state.normalSamples = 0;
+        state.activeReasons = [...new Set(activeReasons)];
+        decrementRecentCounters(state, toolActive);
+        return state.iterations;
     }
 
     if (state.cooldown > 0) {
-        state.cooldown--;
         state.state = 'active';
         state.iterations = clampIterations(cfg.activeIterations ?? OLD_FIXED_PHYSICS_ITERATIONS, cfg);
+        state.stableSamples = 0;
+        state.normalSamples = 0;
+        state.activeReasons = activeReasons.length ? [...new Set(['active-cooldown', ...activeReasons])] : ['active-cooldown'];
+        decrementRecentCounters(state, toolActive);
+        state.cooldown--;
         return state.iterations;
     }
 
     const sampleEveryFrames = Math.max(1, cfg.sampleEveryFrames ?? 6);
     if (frameIndex - state.lastSampleFrame < sampleEveryFrames) {
+        state.activeReasons = activeReasons.length ? [...new Set(activeReasons)] : [];
+        decrementRecentCounters(state, toolActive);
         return state.iterations;
     }
 
@@ -188,41 +298,83 @@ export function getAdaptivePhysicsIterations(game) {
     Object.assign(state, metrics);
     state.lastSampleFrame = frameIndex;
 
-    if (metrics.active || hasRecentDamage(game, frameIndex, sampleEveryFrames)) {
+    if (metrics.highVelocity) activeReasons.push('high-velocity');
+    if (metrics.highStress) activeReasons.push('high-stress');
+
+    if (metrics.active) {
         state.state = 'active';
         state.iterations = clampIterations(cfg.activeIterations ?? OLD_FIXED_PHYSICS_ITERATIONS, cfg);
         state.stableSamples = 0;
-        state.lastReason = metrics.active ? 'motion' : 'damage';
+        state.normalSamples = 0;
+        state.activeReasons = activeReasons.length ? [...new Set(activeReasons)] : ['high-velocity'];
+        state.lastReason = state.activeReasons.join(',');
+        decrementRecentCounters(state, toolActive);
         return state.iterations;
     }
 
-    if (metrics.stable) state.stableSamples++;
-    else state.stableSamples = 0;
+    if (metrics.stable) {
+        state.stableSamples++;
+        state.normalSamples = 0;
+    } else {
+        state.stableSamples = 0;
+        state.normalSamples++;
+    }
 
-    if (state.stableSamples >= (cfg.stableSampleThreshold ?? 3)) {
+    if (state.stableSamples >= (cfg.stableSamplesRequired ?? cfg.stableSampleThreshold ?? 3)) {
         state.state = 'stable';
         state.iterations = clampIterations(cfg.stableIterations ?? 2, cfg);
+    } else if (state.normalSamples >= (cfg.normalSamplesRequired ?? 2) || state.state !== 'stable') {
+        state.state = 'normal';
+        state.iterations = clampIterations(cfg.normalIterations ?? 3, cfg);
     } else {
         state.state = 'normal';
         state.iterations = clampIterations(cfg.normalIterations ?? 3, cfg);
     }
+    state.activeReasons = [];
     state.lastReason = metrics.stable ? 'stable-sample' : 'normal-motion';
+    decrementRecentCounters(state, toolActive);
 
     return state.iterations;
 }
 
 export function recordAdaptivePhysicsDebug(game, physicsMs) {
     const cfg = getAdaptiveConfig(game);
-    if (cfg.enabled === false || cfg.debug !== true) return;
+    if (cfg.enabled === false || (cfg.debug !== true && cfg.debugReasons !== true)) return;
     const state = getAdaptiveState(game);
     const frameIndex = game.frameCount ?? 0;
     if (frameIndex - state.lastDebugFrame < 120) return;
     state.lastDebugFrame = frameIndex;
+    if (cfg.debugReasons === true) {
+        console.log('[physics-adaptive]', {
+            currentState: state.state,
+            currentIterations: state.iterations,
+            activeCooldown: state.cooldown,
+            recentFireFrames: state.recentFireFrames,
+            recentAcidFrames: state.recentAcidFrames,
+            recentElectricFrames: state.recentElectricFrames,
+            recentProjectileFrames: state.recentProjectileFrames,
+            recentDamageFrames: state.recentDamageFrames,
+            stableSampleCount: state.stableSamples,
+            normalSampleCount: state.normalSamples,
+            avgVelocity: Number(state.avgVelocity.toFixed(3)),
+            maxVelocity: Number(state.maxVelocity.toFixed(3)),
+            movingPointCount: state.movingPointCount,
+            highStressCount: state.highStressCount,
+            movingRatio: Number((state.movingRatio || 0).toFixed(3)),
+            highStressRatio: Number((state.highStressRatio || 0).toFixed(3)),
+            activeReasons: state.activeReasons || [],
+            forceFixedReason: state.forceFixedReason,
+            physicsMs: Number(physicsMs.toFixed(2)),
+        });
+        return;
+    }
     console.log(
         `[physics-adaptive] state=${state.state} `
         + `iterations=${state.iterations} `
         + `avgVelocity=${state.avgVelocity.toFixed(3)} `
-        + `highStressCount=${state.highStressCount} `
+        + `maxVelocity=${state.maxVelocity.toFixed(3)} `
+        + `moving=${state.movingPointCount}/${state.sampledPointCount} `
+        + `stress=${state.highStressCount}/${state.sampledSpringCount} `
         + `cooldown=${state.cooldown} `
         + `physics=${physicsMs.toFixed(2)}ms`
     );
@@ -248,7 +400,9 @@ export function createDamageSystemController(game) {
         point.hp = Math.max(0, point.hp - effectiveDamage);
         point.lastDamageType = damageType;
         point.lastDamageFrame = game.frameCount;
-        game.markPhysicsActive?.(`point-damage-${damageType}`);
+        if (shouldMarkAdaptiveDamageEvent(game, damageType, effectiveDamage)) {
+            game.markPhysicsActive?.(`point-damage-${damageType}`);
+        }
         game.recordMissionDamage(point, effectiveDamage, damageType, source);
         game.updateDamageState(point);
 
@@ -278,7 +432,9 @@ export function createDamageSystemController(game) {
         spring.hp = Math.max(0, spring.hp - effectiveDamage);
         spring.lastDamageType = damageType;
         spring.lastDamageFrame = game.frameCount;
-        game.markPhysicsActive?.(`spring-damage-${damageType}`);
+        if (shouldMarkAdaptiveDamageEvent(game, damageType, effectiveDamage)) {
+            game.markPhysicsActive?.(`spring-damage-${damageType}`);
+        }
         game.recordMissionDamage(spring, effectiveDamage, damageType, source);
         game.updateDamageState(spring);
 
@@ -307,7 +463,9 @@ export function createDamageSystemController(game) {
         spring.damageState = 4;
         spring.hp = 0;
         spring.isBurning = false;
-        game.markPhysicsActive?.(`spring-broken-${damageType}`);
+        if (!isEffectReason(damageType) || isDirectEffectApplication(game, damageType)) {
+            game.markPhysicsActive?.(`spring-broken-${damageType}`);
+        }
         game.markTopologyDirty?.('spring-broken');
 
         const x = source.x ?? (spring.p1.x + spring.p2.x) / 2;
@@ -339,7 +497,9 @@ export function createDamageSystemController(game) {
         point.damageState = 4;
         point.hp = 0;
         point.isBurning = false;
-        game.markPhysicsActive?.(`point-destroyed-${damageType}`);
+        if (!isEffectReason(damageType) || isDirectEffectApplication(game, damageType)) {
+            game.markPhysicsActive?.(`point-destroyed-${damageType}`);
+        }
         game.markTopologyDirty?.('point-destroyed');
 
         if (point.dartId) {

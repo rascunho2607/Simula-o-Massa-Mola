@@ -5,9 +5,11 @@ export const acidTool = { id: 'acid' };
 export function createAcidToolController(game) {
     function markAcid(entity, amount = 1) {
         if (!entity) return;
+        const wasCorroding = entity.isCorroding === true && (entity.acidAmount || 0) > 0;
         entity.acidAmount = Math.min(game.config.acidTool.duration, (entity.acidAmount || 0) + amount);
         entity.isCorroding = true;
         entity.corrosionTime = game.config.acidTool.duration;
+        if (!wasCorroding) game.markPhysicsActive?.('acid-started');
         if (entity.p1 && entity.p2) {
             game.markSpringLineTopologyDirtyIfVisualStateChanged?.(entity, 'spring-acid-started');
         }
