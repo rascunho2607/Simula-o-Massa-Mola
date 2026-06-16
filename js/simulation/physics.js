@@ -7,6 +7,227 @@ export function verletStep(point, gravity, friction) {
     point.y += vy + gravity;
 }
 
+const OLD_FIXED_PHYSICS_ITERATIONS = 5;
+
+function getAdaptiveConfig(game) {
+    return game.config?.physicsAdaptive || {};
+}
+
+function clampIterations(value, cfg) {
+    const min = cfg.minIterations ?? 2;
+    const max = cfg.maxIterations ?? OLD_FIXED_PHYSICS_ITERATIONS;
+    return Math.max(min, Math.min(max, value));
+}
+
+function getAdaptiveState(game) {
+    if (!game.__physicsAdaptiveState) {
+        game.__physicsAdaptiveState = {
+            state: 'active',
+            iterations: OLD_FIXED_PHYSICS_ITERATIONS,
+            cooldown: getAdaptiveConfig(game).activeCooldownFrames ?? 45,
+            stableSamples: 0,
+            lastSampleFrame: -Infinity,
+            avgVelocity: 0,
+            maxVelocity: 0,
+            movingPointCount: 0,
+            highStressCount: 0,
+            sampledPointCount: 0,
+            sampledSpringCount: 0,
+            lastDebugFrame: 0,
+            lastReason: 'init',
+        };
+    }
+    return game.__physicsAdaptiveState;
+}
+
+function isToolInteractionActive(game) {
+    if (game.flameActive || game.blowForce > 0 || game.hookState?.active) return true;
+    if (!game.mouse?.down) return false;
+    const tool = game.activeTool || 'mouse';
+    return tool === 'mouse'
+        || tool === 'hook'
+        || tool === 'blower'
+        || tool === 'flame'
+        || tool === 'blade'
+        || tool === 'drill'
+        || tool === 'laser'
+        || tool === 'acid'
+        || tool === 'electric'
+        || tool === 'glue'
+        || tool === 'scissor'
+        || tool === 'hammer';
+}
+
+function hasRecentDamage(game, frameIndex, maxAge) {
+    const points = game.points || [];
+    const springs = game.springs || [];
+
+    for (let i = 0; i < points.length; i++) {
+        const point = points[i];
+        if (!point) continue;
+        const damageAge = frameIndex - (point.lastDamageFrame ?? -Infinity);
+        if (damageAge >= 0 && damageAge <= maxAge) return true;
+        if (point.isBurning || point.isCorroding || (point.electricCharge || 0) > 0) return true;
+    }
+
+    for (let i = 0; i < springs.length; i++) {
+        const spring = springs[i];
+        if (!spring) continue;
+        const damageAge = frameIndex - (spring.lastDamageFrame ?? -Infinity);
+        if (damageAge >= 0 && damageAge <= maxAge) return true;
+        if (spring.isBurning || spring.isCorroding || (spring.electricCharge || 0) > 0) return true;
+    }
+
+    return false;
+}
+
+function estimateClothActivity(game, frameIndex, previousMetrics) {
+    const cfg = getAdaptiveConfig(game);
+    const points = game.points || [];
+    const springs = game.springs || [];
+    const velocityThresholdSq = (cfg.stabilityVelocityThreshold ?? 0.18) * (cfg.stabilityVelocityThreshold ?? 0.18);
+    const motionThresholdSq = (cfg.stabilityMotionThreshold ?? 0.22) * (cfg.stabilityMotionThreshold ?? 0.22);
+    const stressThreshold = cfg.highStressThreshold ?? 0.18;
+    const highStressMaxSq = (1 + stressThreshold) * (1 + stressThreshold);
+    const highStressMinSq = Math.max(0, (1 - stressThreshold) * (1 - stressThreshold));
+    const pointStep = Math.max(1, Math.floor(points.length / 80));
+    const springStep = Math.max(1, Math.floor(springs.length / 120));
+    let velocitySqSum = 0;
+    let maxVelocitySq = 0;
+    let movingPointCount = 0;
+    let sampledPointCount = 0;
+    let highStressCount = 0;
+    let sampledSpringCount = 0;
+
+    for (let i = 0; i < points.length; i += pointStep) {
+        const point = points[i];
+        if (!point || point.active === false || point.isDestroyed || point.pinned) continue;
+        const dx = point.x - point.px;
+        const dy = point.y - point.py;
+        const velocitySq = dx * dx + dy * dy;
+        velocitySqSum += velocitySq;
+        if (velocitySq > maxVelocitySq) maxVelocitySq = velocitySq;
+        if (velocitySq > motionThresholdSq) movingPointCount++;
+        sampledPointCount++;
+    }
+
+    for (let i = 0; i < springs.length; i += springStep) {
+        const spring = springs[i];
+        if (!spring || !spring.active || spring.broken || !spring.length) continue;
+        const dx = spring.p2.x - spring.p1.x;
+        const dy = spring.p2.y - spring.p1.y;
+        const lengthRatioSq = (dx * dx + dy * dy) / Math.max(1, spring.length * spring.length);
+        if (lengthRatioSq > highStressMaxSq || lengthRatioSq < highStressMinSq) highStressCount++;
+        sampledSpringCount++;
+    }
+
+    const avgVelocity = sampledPointCount > 0 ? Math.sqrt(velocitySqSum / sampledPointCount) : 0;
+    const maxVelocity = Math.sqrt(maxVelocitySq);
+    const movingRatio = sampledPointCount > 0 ? movingPointCount / sampledPointCount : 0;
+    const stressRatio = sampledSpringCount > 0 ? highStressCount / sampledSpringCount : 0;
+    const activeVelocitySq = velocityThresholdSq * 9;
+    const isActive = maxVelocitySq > activeVelocitySq
+        || movingRatio > 0.28
+        || stressRatio > 0.18;
+    const isStable = avgVelocity <= (cfg.stabilityVelocityThreshold ?? 0.18)
+        && movingRatio <= 0.08
+        && stressRatio <= 0.04
+        && !hasRecentDamage(game, frameIndex, cfg.sampleEveryFrames ?? 6);
+
+    return {
+        ...previousMetrics,
+        avgVelocity,
+        maxVelocity,
+        movingPointCount,
+        highStressCount,
+        sampledPointCount,
+        sampledSpringCount,
+        active: isActive,
+        stable: isStable,
+    };
+}
+
+export function getAdaptivePhysicsIterations(game) {
+    const cfg = getAdaptiveConfig(game);
+    if (cfg.enabled === false) return OLD_FIXED_PHYSICS_ITERATIONS;
+
+    const state = getAdaptiveState(game);
+    const frameIndex = game.frameCount ?? 0;
+    const eventFrame = game.physicsAdaptiveEventFrame ?? -Infinity;
+    const eventAge = frameIndex - eventFrame;
+
+    if (eventAge >= 0 && eventAge <= (cfg.activeCooldownFrames ?? 45)) {
+        state.cooldown = Math.max(state.cooldown, (cfg.activeCooldownFrames ?? 45) - eventAge);
+        state.state = 'active';
+        state.iterations = clampIterations(cfg.activeIterations ?? OLD_FIXED_PHYSICS_ITERATIONS, cfg);
+        state.stableSamples = 0;
+        state.lastReason = 'event';
+    }
+
+    if (isToolInteractionActive(game)) {
+        state.cooldown = Math.max(state.cooldown, cfg.activeCooldownFrames ?? 45);
+        state.state = 'active';
+        state.iterations = clampIterations(cfg.activeIterations ?? OLD_FIXED_PHYSICS_ITERATIONS, cfg);
+        state.stableSamples = 0;
+        state.lastReason = 'tool';
+    }
+
+    if (state.cooldown > 0) {
+        state.cooldown--;
+        state.state = 'active';
+        state.iterations = clampIterations(cfg.activeIterations ?? OLD_FIXED_PHYSICS_ITERATIONS, cfg);
+        return state.iterations;
+    }
+
+    const sampleEveryFrames = Math.max(1, cfg.sampleEveryFrames ?? 6);
+    if (frameIndex - state.lastSampleFrame < sampleEveryFrames) {
+        return state.iterations;
+    }
+
+    const metrics = estimateClothActivity(game, frameIndex, state);
+    Object.assign(state, metrics);
+    state.lastSampleFrame = frameIndex;
+
+    if (metrics.active || hasRecentDamage(game, frameIndex, sampleEveryFrames)) {
+        state.state = 'active';
+        state.iterations = clampIterations(cfg.activeIterations ?? OLD_FIXED_PHYSICS_ITERATIONS, cfg);
+        state.stableSamples = 0;
+        state.lastReason = metrics.active ? 'motion' : 'damage';
+        return state.iterations;
+    }
+
+    if (metrics.stable) state.stableSamples++;
+    else state.stableSamples = 0;
+
+    if (state.stableSamples >= (cfg.stableSampleThreshold ?? 3)) {
+        state.state = 'stable';
+        state.iterations = clampIterations(cfg.stableIterations ?? 2, cfg);
+    } else {
+        state.state = 'normal';
+        state.iterations = clampIterations(cfg.normalIterations ?? 3, cfg);
+    }
+    state.lastReason = metrics.stable ? 'stable-sample' : 'normal-motion';
+
+    return state.iterations;
+}
+
+export function recordAdaptivePhysicsDebug(game, physicsMs) {
+    const cfg = getAdaptiveConfig(game);
+    if (cfg.enabled === false || cfg.debug !== true) return;
+    const state = getAdaptiveState(game);
+    const frameIndex = game.frameCount ?? 0;
+    if (frameIndex - state.lastDebugFrame < 120) return;
+    state.lastDebugFrame = frameIndex;
+    console.log(
+        `[physics-adaptive] state=${state.state} `
+        + `iterations=${state.iterations} `
+        + `avgVelocity=${state.avgVelocity.toFixed(3)} `
+        + `highStressCount=${state.highStressCount} `
+        + `cooldown=${state.cooldown} `
+        + `physics=${physicsMs.toFixed(2)}ms`
+    );
+}
+
 export function createDamageSystemController(game) {
     function isPointAlive(point) {
         return point && point.active !== false && !point.isDestroyed;
@@ -27,6 +248,7 @@ export function createDamageSystemController(game) {
         point.hp = Math.max(0, point.hp - effectiveDamage);
         point.lastDamageType = damageType;
         point.lastDamageFrame = game.frameCount;
+        game.markPhysicsActive?.(`point-damage-${damageType}`);
         game.recordMissionDamage(point, effectiveDamage, damageType, source);
         game.updateDamageState(point);
 
@@ -56,12 +278,14 @@ export function createDamageSystemController(game) {
         spring.hp = Math.max(0, spring.hp - effectiveDamage);
         spring.lastDamageType = damageType;
         spring.lastDamageFrame = game.frameCount;
+        game.markPhysicsActive?.(`spring-damage-${damageType}`);
         game.recordMissionDamage(spring, effectiveDamage, damageType, source);
         game.updateDamageState(spring);
 
         if (damageType === 'fire') {
             spring.char = Math.min(1, (spring.char || 0) + effectiveDamage / spring.maxHp);
         }
+        game.markSpringLineTopologyDirtyIfVisualStateChanged?.(spring, `spring-damage-${damageType}`);
 
         if (effectiveDamage >= game.config.clothDamage.minDamageToShowEffect) {
             const x = source.x ?? (spring.p1.x + spring.p2.x) / 2;
@@ -83,6 +307,8 @@ export function createDamageSystemController(game) {
         spring.damageState = 4;
         spring.hp = 0;
         spring.isBurning = false;
+        game.markPhysicsActive?.(`spring-broken-${damageType}`);
+        game.markTopologyDirty?.('spring-broken');
 
         const x = source.x ?? (spring.p1.x + spring.p2.x) / 2;
         const y = source.y ?? (spring.p1.y + spring.p2.y) / 2;
@@ -113,6 +339,8 @@ export function createDamageSystemController(game) {
         point.damageState = 4;
         point.hp = 0;
         point.isBurning = false;
+        game.markPhysicsActive?.(`point-destroyed-${damageType}`);
+        game.markTopologyDirty?.('point-destroyed');
 
         if (point.dartId) {
             game.pinnedByDarts.delete(point);

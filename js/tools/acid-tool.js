@@ -8,6 +8,9 @@ export function createAcidToolController(game) {
         entity.acidAmount = Math.min(game.config.acidTool.duration, (entity.acidAmount || 0) + amount);
         entity.isCorroding = true;
         entity.corrosionTime = game.config.acidTool.duration;
+        if (entity.p1 && entity.p2) {
+            game.markSpringLineTopologyDirtyIfVisualStateChanged?.(entity, 'spring-acid-started');
+        }
     }
 
     function processAcidTool() {
@@ -68,6 +71,7 @@ export function createAcidToolController(game) {
             if (!game.isSpringAlive(spring) || !spring.isCorroding) return;
             spring.corrosionTime = Math.max(0, (spring.corrosionTime || 0) - 1);
             spring.acidAmount = Math.max(0, (spring.acidAmount || 0) - 0.45);
+            game.markSpringLineTopologyDirtyIfVisualStateChanged?.(spring, 'spring-acid-updated');
             const mid = getSpringMidpoint(spring);
             if (canTick) game.applyDamageToSpring(spring, cfg.damagePerTick * 1.15 * Math.min(1.5, 0.45 + spring.acidAmount / cfg.duration), 'chemical', { x: mid.x, y: mid.y });
             if (Math.random() < cfg.spreadChance) {

@@ -188,21 +188,47 @@ function drawMotifLayer(ctx, motif, palette, material, size) {
     ctx.restore();
 }
 
-function buildCellColors(canvas, rows, cols) {
-    const ctx = canvas.getContext('2d');
+function buildCellColors(canvas, rows, cols, textureTilesX = 1, textureTilesY = 1) {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const image = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     const colors = [];
+    const colorsFlat = new Array(Math.max(0, rows * cols));
+    const safeCols = Math.max(1, cols);
+    const safeRows = Math.max(1, rows);
     for (let y = 0; y < rows; y++) {
         const row = [];
         for (let x = 0; x < cols; x++) {
-            const sx = Math.min(canvas.width - 1, Math.floor((x + 0.5) / Math.max(1, cols) * canvas.width));
-            const sy = Math.min(canvas.height - 1, Math.floor((y + 0.5) / Math.max(1, rows) * canvas.height));
+            const u = ((x + 0.5) / safeCols * textureTilesX) % 1;
+            const v = ((y + 0.5) / safeRows * textureTilesY) % 1;
+            const sx = Math.min(canvas.width - 1, Math.floor(u * canvas.width));
+            const sy = Math.min(canvas.height - 1, Math.floor(v * canvas.height));
             const index = (sy * canvas.width + sx) * 4;
-            row.push(`rgba(${image[index]}, ${image[index + 1]}, ${image[index + 2]}, ${Math.max(0.76, image[index + 3] / 255)})`);
+            const color = `rgba(${image[index]},${image[index + 1]},${image[index + 2]},${Math.max(0.88, image[index + 3] / 255)})`;
+            row.push(color);
+            colorsFlat[y * cols + x] = color;
         }
         colors.push(row);
     }
-    return colors;
+    return {
+        cellColors: colors,
+        cellColorsFlat: colorsFlat,
+        cellColorCols: cols,
+        cellColorRows: rows,
+        cellColorTexture: canvas,
+        cellColorTextureTilesX: textureTilesX,
+        cellColorTextureTilesY: textureTilesY,
+    };
+}
+
+function getCellColorCache(config, texture, rows, cols) {
+    const visualConfig = config.clothVisual || {};
+    return buildCellColors(
+        texture,
+        rows,
+        cols,
+        visualConfig.fabricTextureTilesX ?? 1,
+        visualConfig.fabricTextureTilesY ?? 1
+    );
 }
 
 export function createClothVisualDescriptor(options = {}) {
@@ -243,6 +269,25 @@ export function createClothVisualSystem() {
             category: current.category,
             ...overrides,
         });
+        if (descriptor.mode === 'test') {
+            state = {
+                ...descriptor,
+                texture: null,
+                cellColors: [],
+                cellColorsFlat: null,
+                cellColorCols: cols,
+                cellColorRows: rows,
+                cellColorTexture: null,
+            };
+            config.clothVisual = {
+                ...config.clothVisual,
+                mode: descriptor.mode,
+                material: descriptor.material,
+                category: descriptor.category,
+            };
+            return state;
+        }
+
         const texture = makeCanvas(96, 96);
         const ctx = texture.getContext('2d', { willReadFrequently: true });
         const random = createSeededRandom(descriptor.seed);
@@ -256,7 +301,7 @@ export function createClothVisualSystem() {
         state = {
             ...descriptor,
             texture,
-            cellColors: buildCellColors(texture, rows, cols),
+            ...getCellColorCache(config, texture, rows, cols),
         };
         config.clothVisual = {
             ...config.clothVisual,
@@ -268,7 +313,21 @@ export function createClothVisualSystem() {
     }
 
     function ensure(config, rows, cols) {
-        if (!state || state.cellColors.length !== rows || state.cellColors[0]?.length !== cols) {
+        if ((config.clothVisual?.mode || 'fabric') !== 'fabric') {
+            if (!state || state.mode !== 'test') return regenerate(config, rows, cols);
+            return state;
+        }
+        const visualConfig = config.clothVisual || {};
+        const textureTilesX = visualConfig.fabricTextureTilesX ?? 1;
+        const textureTilesY = visualConfig.fabricTextureTilesY ?? 1;
+        if (
+            !state
+            || state.cellColorRows !== rows
+            || state.cellColorCols !== cols
+            || state.cellColorTexture !== state.texture
+            || state.cellColorTextureTilesX !== textureTilesX
+            || state.cellColorTextureTilesY !== textureTilesY
+        ) {
             return regenerate(config, rows, cols);
         }
         return state;
@@ -278,7 +337,7 @@ export function createClothVisualSystem() {
         if (!state?.texture) return regenerate(config, rows, cols);
         state = {
             ...state,
-            cellColors: buildCellColors(state.texture, rows, cols),
+            ...getCellColorCache(config, state.texture, rows, cols),
         };
         config.clothVisual = {
             ...config.clothVisual,
@@ -293,7 +352,7 @@ export function createClothVisualSystem() {
         if (!config.clothVisual) config.clothVisual = { mode: 'fabric', material: 'mixed', category: 'mixed' };
         config.clothVisual.mode = mode;
         if (mode === 'fabric') return regenerate(config, rows, cols);
-        return ensure(config, rows, cols);
+        return regenerate(config, rows, cols);
     }
 
     function setMaterial(config, rows, cols, material) {
@@ -331,30 +390,17 @@ function isPointRenderable(point) {
     return point && point.active !== false && !point.isDestroyed;
 }
 
-function sampleTextureColor(visualState, u, v) {
-    const texture = visualState?.texture;
-    if (!texture) return 'rgba(120, 180, 255, 0.95)';
-
-    if (!visualState.textureImageData || visualState.textureImageDataSource !== texture) {
-        const textureCtx = texture.getContext('2d', { willReadFrequently: true });
-        visualState.textureImageData = textureCtx.getImageData(0, 0, texture.width, texture.height);
-        visualState.textureImageDataSource = texture;
-    }
-
-    const data = visualState.textureImageData.data;
-    const tx = Math.max(0, Math.min(texture.width - 1, Math.floor(u * texture.width)));
-    const ty = Math.max(0, Math.min(texture.height - 1, Math.floor(v * texture.height)));
-    const index = (ty * texture.width + tx) * 4;
-    const alpha = Math.max(0.88, data[index + 3] / 255);
-
-    return `rgba(${data[index]}, ${data[index + 1]}, ${data[index + 2]}, ${alpha})`;
-}
-
 export function renderClothFilledFabric(ctx, points, rows, cols, visualState, options = {}) {
-    if (!visualState?.texture && !visualState?.cellColors) return;
+    if ((options.fillAlpha ?? 0.92) <= 0) return;
+    if (!visualState?.cellColorsFlat && !visualState?.cellColors) return;
     if (!Number.isFinite(rows) || !Number.isFinite(cols) || rows <= 0 || cols <= 0) return;
-    const textureTilesX = options.textureTilesX ?? 1;
-    const textureTilesY = options.textureTilesY ?? 1;
+    const colors = visualState.cellColorsFlat;
+    const hasFlatColors = colors
+        && visualState.cellColorRows === rows
+        && visualState.cellColorCols === cols
+        && visualState.cellColorTextureTilesX === (options.textureTilesX ?? visualState.cellColorTextureTilesX)
+        && visualState.cellColorTextureTilesY === (options.textureTilesY ?? visualState.cellColorTextureTilesY);
+    const fallbackColor = visualState.palette?.[0] || '#55aaff';
     ctx.save();
     ctx.globalAlpha = options.fillAlpha ?? 0.92;
     ctx.globalCompositeOperation = 'source-over';
@@ -365,14 +411,10 @@ export function renderClothFilledFabric(ctx, points, rows, cols, visualState, op
             const p10 = getPoint(points, cols, x + 1, y);
             const p11 = getPoint(points, cols, x + 1, y + 1);
             const p01 = getPoint(points, cols, x, y + 1);
-            if (![p00, p10, p11, p01].every(isPointRenderable)) continue;
+            if (!isPointRenderable(p00) || !isPointRenderable(p10) || !isPointRenderable(p11) || !isPointRenderable(p01)) continue;
 
-            const u = ((x + 0.5) / Math.max(1, cols) * textureTilesX) % 1;
-            const v = ((y + 0.5) / Math.max(1, rows) * textureTilesY) % 1;
-            ctx.fillStyle = sampleTextureColor(visualState, u, v)
-                || visualState.cellColors?.[y]?.[x]
-                || visualState.palette?.[0]
-                || '#55aaff';
+            const colorIndex = y * cols + x;
+            ctx.fillStyle = (hasFlatColors ? colors[colorIndex] : visualState.cellColors?.[y]?.[x]) || fallbackColor;
             ctx.beginPath();
             ctx.moveTo(p00.x, p00.y);
             ctx.lineTo(p10.x, p10.y);
@@ -506,46 +548,149 @@ export function renderClothMotifTexture(ctx, points, rows, cols, visualState) {
     ctx.restore();
 }
 
-export function renderClothPhysicsLines(ctx, springs, points, options = {}) {
-    if (options.simpleMesh) {
-        ctx.save();
-        ctx.globalAlpha = options.lineAlpha ?? options.alpha ?? 0.08;
-        ctx.strokeStyle = options.lineColor || '#55aaff';
-        ctx.lineWidth = options.lineWidth ?? 0.45;
-        ctx.beginPath();
-        springs.forEach(spring => {
-            if (!spring || spring.active === false || spring.broken || !spring.p1 || !spring.p2) return;
-            if (!isPointRenderable(spring.p1) || !isPointRenderable(spring.p2)) return;
-            ctx.moveTo(spring.p1.x, spring.p1.y);
-            ctx.lineTo(spring.p2.x, spring.p2.y);
-        });
-        ctx.stroke();
-        ctx.restore();
+export function isCommonSpringForGpu(spring) {
+    return isBaseSpringRenderable(spring)
+        && !spring.isTemporary
+        && !(spring.damageState > 0)
+        && !((spring.damage || 0) > 0)
+        && !(Number.isFinite(spring.hp) && Number.isFinite(spring.maxHp) && spring.hp < spring.maxHp)
+        && !spring.isBurning
+        && !spring.burning
+        && !((spring.acidAmount || 0) > 0)
+        && !((spring.electricCharge || 0) > 0)
+        && !spring.isSeam
+        && !spring.isWeakPoint
+        && !spring.glueBridge
+        && !spring.isGlueBridge
+        && !((spring.char || 0) > 0)
+        && (spring.material || 'cloth') === 'cloth'
+        && (spring.layerIndex ?? 0) === 0;
+}
 
-        ctx.save();
-        ctx.globalAlpha = options.pointAlpha ?? options.alpha ?? 0.1;
-        ctx.fillStyle = options.pointColor || '#55aaff';
-        points.forEach(point => {
-            if (!isPointRenderable(point)) return;
+export function renderClothPhysicsLines(ctx, springs, points, options = {}) {
+    const skipCommonSprings = options.skipCommonSprings === true || options.forceSpecialOnly === true;
+    const skipCommonPoints = options.skipCommonPoints === true;
+    if (options.simpleMesh || options.fast) {
+        const lineAlpha = options.lineAlpha ?? options.alpha ?? 1;
+        const pointAlpha = options.pointAlpha ?? options.alpha ?? 1;
+        const drawLines = lineAlpha > 0;
+        const drawPoints = pointAlpha > 0;
+        if (!drawLines && !drawPoints) return;
+        const lineColor = options.lineColor || '#55aaff';
+        const pointColor = options.pointColor || lineColor;
+        const lineWidth = options.lineWidth ?? 0.45;
+        const pointRadius = options.pointRadius ?? 1;
+
+        if (drawLines && !skipCommonSprings) {
+            ctx.save();
+            ctx.globalAlpha = lineAlpha;
+            ctx.strokeStyle = lineColor;
+            ctx.lineWidth = lineWidth;
+            ctx.setLineDash([]);
             ctx.beginPath();
-            ctx.arc(point.x, point.y, 0.75, 0, Math.PI * 2);
+            for (let i = 0; i < springs.length; i++) {
+                const spring = springs[i];
+                if (!isFastSpringRenderable(spring)) continue;
+                ctx.moveTo(spring.p1.x, spring.p1.y);
+                ctx.lineTo(spring.p2.x, spring.p2.y);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        if (drawLines) {
+            for (let i = 0; i < springs.length; i++) {
+                const spring = springs[i];
+                if (!isSpecialSpringRenderable(spring)) continue;
+                spring.draw();
+            }
+        }
+
+        if (drawPoints && !skipCommonPoints) {
+            ctx.save();
+            ctx.globalAlpha = pointAlpha;
+            ctx.fillStyle = pointColor;
+            ctx.beginPath();
+            for (let i = 0; i < points.length; i++) {
+                const point = points[i];
+                if (!isFastPointRenderable(point)) continue;
+                ctx.moveTo(point.x + pointRadius, point.y);
+                ctx.arc(point.x, point.y, pointRadius, 0, Math.PI * 2);
+            }
             ctx.fill();
-        });
-        ctx.restore();
+            ctx.restore();
+        }
+
+        if (drawPoints) {
+            for (let i = 0; i < points.length; i++) {
+                const point = points[i];
+                if (!isSpecialPointRenderable(point)) continue;
+                point.draw();
+            }
+        }
         return;
     }
 
-    ctx.save();
-    if (options.lineAlpha !== undefined) ctx.globalAlpha = options.lineAlpha;
-    else if (options.alpha !== undefined) ctx.globalAlpha = options.alpha;
-    springs.forEach(spring => spring.draw());
-    ctx.restore();
+    const lineAlpha = options.lineAlpha ?? options.alpha ?? 1;
+    const pointAlpha = options.pointAlpha ?? options.alpha ?? 1;
+    if (lineAlpha > 0) {
+        ctx.save();
+        ctx.globalAlpha = lineAlpha;
+        springs.forEach(spring => {
+            if (skipCommonSprings && !isSpecialSpringRenderable(spring)) return;
+            spring.draw();
+        });
+        ctx.restore();
+    }
 
-    ctx.save();
-    if (options.pointAlpha !== undefined) ctx.globalAlpha = options.pointAlpha;
-    else if (options.alpha !== undefined) ctx.globalAlpha = options.alpha;
-    points.forEach(point => point.draw());
-    ctx.restore();
+    if (pointAlpha > 0) {
+        ctx.save();
+        ctx.globalAlpha = pointAlpha;
+        points.forEach(point => {
+            if (skipCommonPoints && !isSpecialPointRenderable(point)) return;
+            point.draw();
+        });
+        ctx.restore();
+    }
+}
+
+function isBaseSpringRenderable(spring) {
+    return spring
+        && spring.active !== false
+        && !spring.broken
+        && spring.p1
+        && spring.p2
+        && isPointRenderable(spring.p1)
+        && isPointRenderable(spring.p2);
+}
+
+function isSpecialSpringRenderable(spring) {
+    if (!isBaseSpringRenderable(spring)) return false;
+    return !isCommonSpringForGpu(spring);
+}
+
+function isFastSpringRenderable(spring) {
+    return isBaseSpringRenderable(spring) && !isSpecialSpringRenderable(spring);
+}
+
+function isSpecialPointRenderable(point) {
+    if (!isPointRenderable(point)) return false;
+    return point.pinned
+        || point.dartId
+        || point.damageState > 0
+        || point.isBurning
+        || point.acidAmount > 0
+        || point.electricCharge > 0
+        || point.frozen
+        || point.slowed
+        || point.char > 0
+        || point.isCoverPoint
+        || point.material !== 'cloth'
+        || (point.layerIndex ?? 0) !== 0;
+}
+
+function isFastPointRenderable(point) {
+    return isPointRenderable(point) && !isSpecialPointRenderable(point);
 }
 
 export function getVisualMaterialOptions() {

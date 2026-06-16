@@ -28,6 +28,7 @@ export function createGlueToolController(game) {
                 bridge.glueBridge = true;
                 bridge.coverageWeight = 0;
                 game.springs.push(bridge);
+                game.markTopologyDirty?.('glue-bridge-added');
                 game.glueBridges.push({ spring: bridge, life: cfg.pinDuration });
                 game.pushToolEffect({ type: 'glueLine', x1: game.glueState.pendingPoint.x, y1: game.glueState.pendingPoint.y, x2: point.x, y2: point.y, life: 26, maxLife: 26 });
                 game.addBackgroundDecal?.('glue', point.x, point.y, { radius: cfg.radius, temporary: true, intensity: 0.75 });
@@ -64,6 +65,7 @@ export function createGlueToolController(game) {
         if (!bridge || !bridge.spring) return;
         bridge.spring.active = false;
         bridge.spring.broken = true;
+        game.markTopologyDirty?.('glue-bridge-removed');
         if (burst) {
             const mid = getSpringMidpoint(bridge.spring);
             game.createFineParticles(mid.x, mid.y, '#b9fbff', 5, 2);

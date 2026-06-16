@@ -5,13 +5,13 @@ export function createFlameEffectsController(game) {
         for (let i = 0; i < 40; i++) {
             const angle = Math.random() * Math.PI * 2;
             const speed = 4 + Math.random() * 5;
-            game.fireParticles.push(new game.FireParticle(
+            game.createFireParticle(
                 x,
                 y,
                 Math.cos(angle) * speed,
                 Math.sin(angle) * speed,
                 0.8 + Math.random() * 0.4
-            ));
+            );
         }
     }
 

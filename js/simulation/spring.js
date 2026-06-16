@@ -172,11 +172,13 @@ export function createSpringClass(game) {
         setMaterial(materialKey) {
             this.material = game.config.materials[materialKey] ? materialKey : 'cloth';
             this.applyMaterialStats();
+            game.markSpringLineTopologyDirtyIfVisualStateChanged?.(this, 'spring-material-changed');
         }
 
         setLayer(layerIndex) {
             this.layerIndex = game.getLayerByIndex(layerIndex).index;
             this.applyMaterialStats();
+            game.markSpringLineTopologyDirtyIfVisualStateChanged?.(this, 'spring-layer-changed');
         }
 
         markSeam(groupId, releasesOnBreak = false) {
@@ -185,6 +187,13 @@ export function createSpringClass(game) {
             this.releasesOnBreak = releasesOnBreak;
             this.material = 'reinforced';
             this.applyMaterialStats(false);
+            game.markSpringLineTopologyDirtyIfVisualStateChanged?.(this, 'spring-seam-changed');
+        }
+
+        markWeakPoint() {
+            this.isWeakPoint = true;
+            this.applyMaterialStats();
+            game.markSpringLineTopologyDirtyIfVisualStateChanged?.(this, 'spring-weak-point-changed');
         }
 
         update() {
@@ -213,13 +222,13 @@ export function createSpringClass(game) {
                     const x = this.p1.x + (this.p2.x - this.p1.x) * t;
                     const y = this.p1.y + (this.p2.y - this.p1.y) * t;
                     
-                    game.fireParticles.push(new game.FireParticle(
+                    game.createFireParticle(
                         x + (Math.random() - 0.5) * 3,
                         y + (Math.random() - 0.5) * 3,
                         (Math.random() - 0.5) * 0.3,
                         -Math.random() * 0.8 - 0.2,
                         this.burnIntensity * 0.7
-                    ));
+                    );
                 }
                 
                 if (Math.random() < 0.02 * this.burnIntensity) {
@@ -330,11 +339,13 @@ export function createSpringClass(game) {
             if (game.getMaterial(this).fireResistance >= 999) return;
             this.isBurning = true;
             this.burnIntensity = intensity;
+            game.markSpringLineTopologyDirtyIfVisualStateChanged?.(this, 'spring-ignited');
         }
         
         extinguish() {
             this.isBurning = false;
             this.burnIntensity = 0;
+            game.markSpringLineTopologyDirtyIfVisualStateChanged?.(this, 'spring-extinguished');
         }
 
         mouseNearby() {

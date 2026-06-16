@@ -6,7 +6,18 @@ export function pushLimitedParticle(list, particle, maxParticles) {
     if (list.length < maxParticles) list.push(particle);
 }
 
+function getFireParticleLimits(config) {
+    const fireConfig = config.fire || {};
+    return {
+        maxParticles: Math.max(0, fireConfig.maxParticles ?? config.fireGpuRenderer?.maxParticles ?? 1200),
+        maxNewParticlesPerFrame: Math.max(0, fireConfig.maxNewParticlesPerFrame ?? 80),
+        particleCullBatchSize: Math.max(1, fireConfig.particleCullBatchSize ?? 300),
+    };
+}
+
 export function createParticleSystemController(game) {
+    let newFireParticlesThisFrame = 0;
+
     function canSpawnDamageParticle() {
         const maxParticles = game.config.damageEffectsConfig.maxDamageParticles;
         if (game.particles.length >= maxParticles || game.damageParticleBudget >= maxParticles) return false;
@@ -17,6 +28,47 @@ export function createParticleSystemController(game) {
     function pushDamageParticle(x, y, vx, vy, color, size, life) {
         if (!canSpawnDamageParticle()) return;
         game.particles.push(new game.Particle(x, y, vx, vy, color, size, life));
+    }
+
+    function resetFireParticleFrameBudget() {
+        newFireParticlesThisFrame = 0;
+    }
+
+    function enforceFireParticleLimit(list = game.fireParticles) {
+        const { maxParticles } = getFireParticleLimits(game.config);
+        if (!Array.isArray(list) || maxParticles <= 0) return [];
+
+        let nextList = list;
+        if (nextList.length >= maxParticles) {
+            nextList = nextList.filter(particle => particle?.life > 0 && particle.alive !== false);
+        }
+        if (nextList.length > maxParticles) {
+            nextList = nextList.slice(nextList.length - maxParticles);
+        }
+        if (nextList !== game.fireParticles) game.setFireParticles(nextList);
+        return nextList;
+    }
+
+    function canSpawnFireParticle() {
+        const limits = getFireParticleLimits(game.config);
+        if (limits.maxParticles <= 0) return false;
+        if (newFireParticlesThisFrame >= limits.maxNewParticlesPerFrame) return false;
+
+        if (game.fireParticles.length >= limits.maxParticles) {
+            enforceFireParticleLimit(game.fireParticles);
+        }
+        if (game.fireParticles.length >= limits.maxParticles) {
+            const removeCount = Math.min(limits.particleCullBatchSize, game.fireParticles.length - limits.maxParticles + 1);
+            game.fireParticles.splice(0, removeCount);
+        }
+        return game.fireParticles.length < limits.maxParticles;
+    }
+
+    function pushFireParticle(particle) {
+        if (!particle || !canSpawnFireParticle()) return false;
+        game.fireParticles.push(particle);
+        newFireParticlesThisFrame++;
+        return true;
     }
 
     function createImpactRing(x, y, radius, color = '#ffcc55') {
@@ -87,5 +139,16 @@ export function createParticleSystemController(game) {
         }
     }
 
-    return { canSpawnDamageParticle, pushDamageParticle, createImpactRing, updateImpactRings, drawImpactRings, createDamageBurst };
+    return {
+        canSpawnDamageParticle,
+        pushDamageParticle,
+        resetFireParticleFrameBudget,
+        enforceFireParticleLimit,
+        canSpawnFireParticle,
+        pushFireParticle,
+        createImpactRing,
+        updateImpactRings,
+        drawImpactRings,
+        createDamageBurst,
+    };
 }

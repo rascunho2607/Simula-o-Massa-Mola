@@ -16,7 +16,7 @@ export function createToolbarController(game) {
         toolbar.style.width = `${toolbarWidth}px`;
         toolbar.style.height = `${toolbarHeight}px`;
 
-        const pivotBelow = 150;
+        const pivotBelow = 360;
         const spreadDeg = count > 7 ? 78 : 46;
         const hoverRise = 46;
         const neighbourPush = 42;

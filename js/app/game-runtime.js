@@ -18,6 +18,7 @@ import { createSpecialModalController } from '../ui/special-modal.js';
 import { createHudController, updateDartCounter as renderDartCounter } from '../ui/hud.js';
 import { drawCoveredTarget as renderCoveredTarget } from '../render/renderer.js';
 import { createClothVisualSystem } from '../render/cloth-visual-system.js';
+import { createClothGpuRenderer } from '../render/cloth-gpu-renderer.js';
 import { createToolVisualEffectsController, createToolOverlayRendererController } from '../render/effects-renderer.js';
 import { missions as missionData } from '../missions/mission-data.js';
 import { createMissionController } from '../missions/mission-system.js';
@@ -132,6 +133,11 @@ export function bootGame() {
         // Configurações iniciais
         let config = createDefaultConfig();
         const clothVisualSystem = createClothVisualSystem();
+        const clothGpuRenderer = createClothGpuRenderer({
+            width: canvas.width,
+            height: canvas.height,
+            debug: config.rendering?.debugGpuRenderer === true,
+        });
 
         let width, height, rows, cols;
         let points = [];
@@ -157,6 +163,7 @@ export function bootGame() {
         let impactRings = [];
         let damageParticleBudget = 0;
         let frameCount = 0;
+        let physicsAdaptiveEventFrame = -Infinity;
         let backgroundInitialized = false;
         let targetHud = null;
         let coveredTarget = {
@@ -402,6 +409,8 @@ export function bootGame() {
                     get particles() { return particles; },
                     get damageParticleBudget() { return damageParticleBudget; },
                     set damageParticleBudget(value) { damageParticleBudget = value; },
+                    setFireParticles(nextFireParticles) { fireParticles = nextFireParticles; },
+                    get fireParticles() { return fireParticles; },
                     get impactRings() { return impactRings; },
                     set impactRings(value) { impactRings = value; },
                 });
@@ -415,6 +424,35 @@ export function bootGame() {
 
         function pushDamageParticle(x, y, vx, vy, color, size, life) {
             return getParticleSystemController().pushDamageParticle(x, y, vx, vy, color, size, life);
+        }
+
+        function resetFireParticleFrameBudget() {
+            return getParticleSystemController().resetFireParticleFrameBudget();
+        }
+
+        function enforceFireParticleLimit(list = fireParticles) {
+            return getParticleSystemController().enforceFireParticleLimit(list);
+        }
+
+        function createFireParticle(x, y, vx, vy, intensity) {
+            if (!getParticleSystemController().canSpawnFireParticle()) return false;
+            return getParticleSystemController().pushFireParticle(new FireParticle(x, y, vx, vy, intensity));
+        }
+
+        function markClothTopologyDirty(reason) {
+            clothGpuRenderer.markTopologyDirty?.(reason);
+        }
+
+        function markClothLineTopologyDirty(reason) {
+            clothGpuRenderer.markLineTopologyDirty?.(reason);
+        }
+
+        function markSpringLineTopologyDirtyIfVisualStateChanged(spring, reason) {
+            return clothGpuRenderer.markLineTopologyDirtyIfSpringChanged?.(spring, reason) === true;
+        }
+
+        function markPhysicsActive(reason = 'event') {
+            physicsAdaptiveEventFrame = frameCount;
         }
 
         function createImpactRing(x, y, radius, color = '#ffcc55') {
@@ -499,6 +537,10 @@ export function bootGame() {
                     updateDamageState,
                     createDamageBurst,
                     createImpactRing,
+                    markTopologyDirty: markClothTopologyDirty,
+                    markLineTopologyDirty: markClothLineTopologyDirty,
+                    markSpringLineTopologyDirtyIfVisualStateChanged,
+                    markPhysicsActive,
                     updateDartCounter,
                     damageCoveredTarget,
                     get frameCount() { return frameCount; },
@@ -778,6 +820,7 @@ export function bootGame() {
                     applyDamageToPoint,
                     applyDamageToSpring,
                     addBackgroundDecal,
+                    markSpringLineTopologyDirtyIfVisualStateChanged,
                     get activeTool() { return activeTool; },
                     get frameCount() { return frameCount; },
                     get mouse() { return mouse; },
@@ -814,6 +857,7 @@ export function bootGame() {
                     addBackgroundDecal,
                     setGluePins(nextGluePins) { gluePins = nextGluePins; },
                     setGlueBridges(nextGlueBridges) { glueBridges = nextGlueBridges; },
+                    markTopologyDirty: markClothTopologyDirty,
                     get glueState() { return glueState; },
                     get gluePins() { return gluePins; },
                     get glueBridges() { return glueBridges; },
@@ -857,6 +901,7 @@ export function bootGame() {
                     applyDamageToPoint,
                     applyDamageToSpring,
                     addBackgroundDecal,
+                    markSpringLineTopologyDirtyIfVisualStateChanged,
                     setLastElectricTime(nextLastElectricTime) { lastElectricTime = nextLastElectricTime; },
                     get lastElectricTime() { return lastElectricTime; },
                     get points() { return points; },
@@ -1032,6 +1077,7 @@ export function bootGame() {
                 flameEffectsController = createFlameEffectsController({
                     Particle,
                     FireParticle,
+                    createFireParticle,
                     get points() { return points; },
                     get particles() { return particles; },
                     get fireParticles() { return fireParticles; },
@@ -1096,8 +1142,7 @@ export function bootGame() {
             getMaterial,
             materialDamageColor,
             updateDartCounter,
-            get FireParticle() { return FireParticle; },
-            get fireParticles() { return fireParticles; },
+            createFireParticle,
             get specialAbilities() { return specialAbilities; },
             get springs() { return springs; },
             get burningPoints() { return burningPoints; },
@@ -1164,8 +1209,8 @@ export function bootGame() {
             breakSpring,
             getMaterial,
             materialDamageColor,
-            get FireParticle() { return FireParticle; },
-            get fireParticles() { return fireParticles; },
+            createFireParticle,
+            markSpringLineTopologyDirtyIfVisualStateChanged,
             get frameCount() { return frameCount; },
             get activeTool() { return activeTool; },
             get blowForce() { return blowForce; },
@@ -1288,6 +1333,7 @@ export function bootGame() {
             const hadBackground = backgroundInitialized;
             if ((!keepDecals || !config.decals?.persistent) && hadBackground) clearBackgroundDamage();
             getClothController().init();
+            markClothTopologyDirty('cloth-regenerated');
             if (randomizeVisual) clothVisualSystem.regenerate(config, rows, cols);
             else clothVisualSystem.refresh(config, rows, cols);
             if (!backgroundInitialized) {
@@ -1309,6 +1355,7 @@ export function bootGame() {
             toolIndicator.className = 'tool-indicator';
             extinguishAllFire();
             init({ randomizeVisual, keepDecals, seedDecals });
+            markPhysicsActive('regenerate-cloth');
             updateClothSidePanel();
         }
 
@@ -1339,18 +1386,24 @@ export function bootGame() {
                     setDarts(nextDarts) { darts = nextDarts; },
                     setParticles(nextParticles) { particles = nextParticles; },
                     setFireParticles(nextFireParticles) { fireParticles = nextFireParticles; },
+                    resetFireParticleFrameBudget,
+                    enforceFireParticleLimit,
                     get width() { return width; },
                     get height() { return height; },
                     get points() { return points; },
                     get springs() { return springs; },
+                    get clothGpuRenderer() { return clothGpuRenderer; },
                     getClothVisualState() { return clothVisualSystem.ensure(config, rows, cols); },
                     get cannonballs() { return cannonballs; },
                     get darts() { return darts; },
                     get particles() { return particles; },
                     get fireParticles() { return fireParticles; },
+                    get frameCount() { return frameCount; },
+                    get physicsAdaptiveEventFrame() { return physicsAdaptiveEventFrame; },
                     get activeTool() { return activeTool; },
                     get blowForce() { return blowForce; },
                     get flameActive() { return flameActive; },
+                    get hookState() { return hookState; },
                     get mouse() { return mouse; },
                 });
             }
@@ -1370,6 +1423,7 @@ export function bootGame() {
                     config,
                     Particle,
                     FireParticle,
+                    createFireParticle,
                     get mouse() { return mouse; },
                     get blowAngle() { return blowAngle; },
                     get blowForce() { return blowForce; },

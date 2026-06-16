@@ -106,13 +106,13 @@ export function createToolVisualEffectsController(game) {
             const offset = (Math.random() - 0.5) * baseWidth * 0.7;
             const pX = centerX + Math.cos(angle) * dist + Math.cos(angle - Math.PI / 2) * offset;
             const pY = centerY + Math.sin(angle) * dist + Math.sin(angle - Math.PI / 2) * offset;
-            game.fireParticles.push(new game.FireParticle(
+            game.createFireParticle(
                 pX,
                 pY,
                 Math.cos(angle) * 2 + (Math.random() - 0.5) * 1.5,
                 Math.sin(angle) * 2 + (Math.random() - 0.5) * 1.5 - 0.5,
                 game.config.flameIntensity * (0.7 + Math.random() * 0.3)
-            ));
+            );
         }
 
         if (Math.random() < 0.3 * game.config.flameIntensity) {

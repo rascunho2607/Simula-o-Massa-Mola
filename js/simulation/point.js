@@ -219,13 +219,13 @@ export function createPointClass(game) {
                 }
                 
                 if (Math.random() < 0.3 * this.burnIntensity) {
-                    game.fireParticles.push(new game.FireParticle(
+                    game.createFireParticle(
                         this.x + (Math.random() - 0.5) * 5,
                         this.y + (Math.random() - 0.5) * 5,
                         (Math.random() - 0.5) * 0.5,
                         -Math.random() * 1.5 - 0.5,
                         this.burnIntensity
-                    ));
+                    );
                 }
                 
                 // Propagar fogo mais rápido se tiver upgrade

@@ -33,6 +33,7 @@ export function createElectricToolController(game) {
                 const other = spring.p1 === point ? spring.p2 : spring.p1;
                 const mid = getSpringMidpoint(spring);
                 spring.electricCharge = Math.max(spring.electricCharge || 0, cfg.stunFrames);
+                game.markSpringLineTopologyDirtyIfVisualStateChanged?.(spring, 'spring-electric-started');
                 const metalBoost = spring.material === 'metalMesh' ? 1.35 : (spring.isSeam || spring.material === 'reinforced' ? 1.12 : 1);
                 game.applyDamageToSpring(spring, current.damage * 0.65 * metalBoost, 'electric', { x: mid.x, y: mid.y });
                 game.pushToolEffect({ type: 'electricArc', x1: point.x, y1: point.y, x2: other.x, y2: other.y, strong: metalBoost > 1.2, life: 12, maxLife: 12 });
@@ -54,7 +55,10 @@ export function createElectricToolController(game) {
             if (point.stunTime > 0) point.stunTime--;
         });
         game.springs.forEach(spring => {
-            if (spring.electricCharge > 0) spring.electricCharge--;
+            if (spring.electricCharge > 0) {
+                spring.electricCharge--;
+                game.markSpringLineTopologyDirtyIfVisualStateChanged?.(spring, 'spring-electric-updated');
+            }
         });
     }
 

@@ -4,6 +4,8 @@ const TYPE_SMOKE = 1;
 const TYPE_SPARK = 2;
 
 const vertexShaderSource = `
+precision mediump float;
+
 attribute vec2 a_position;
 attribute float a_size;
 attribute float a_alpha;
